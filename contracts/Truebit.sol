@@ -18,9 +18,6 @@ contract Truebit{
     bytes32 solution; //can be a root
   }
 
-  struct Solution{
-  }
-
   function createTask(bytes32 dataRoot, uint minDeposit) payable returns (uint){
     uint gasLimit = msg.value / gasPrice;
     tasks[numTasks] = Task(dataRoot, msg.sender, minDeposit, gasLimit, false, false, 0x0, 0x0);
@@ -35,9 +32,8 @@ contract Truebit{
     t.proccessed = true;
   }
 
-
   function solved(Task t) private returns (bool){
-    return t.solved; //stub for now
+    return t.solved;
   }
   function cheatSolve(uint taskIndex, bytes32 globalRoot, bytes32 solution){
     Task t = tasks[taskIndex];

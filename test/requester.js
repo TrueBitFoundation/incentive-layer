@@ -2,7 +2,7 @@ var Requester = artifacts.require("./ExampleRequester.sol");
 var Truebit = artifacts.require("./Truebit.sol");
 
 contract('Requester Integration', function(accounts) {
-  it("get instance, check truebit address", function() {
+  it("", function() {
     var truebit, requester, dataRoot, minDeposit, value, taskIndex0, globalRoot0, solutions0
     return Truebit.deployed().then(function(_truebit) {
       truebit = _truebit

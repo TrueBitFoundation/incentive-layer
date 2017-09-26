@@ -1,0 +1,209 @@
+{
+  "contractName": "Requester",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "taskIndex",
+          "type": "uint256"
+        },
+        {
+          "name": "solution",
+          "type": "bytes32"
+        }
+      ],
+      "name": "proccessTask",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60606040523415600e57600080fd5b5b609b8061001d6000396000f300606060405263ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663cfc9ca178114603c575b600080fd5b3415604657600080fd5b60526004356024356066565b604051901515815260200160405180910390f35b60005b929150505600a165627a7a72305820be61f06545aadb9095dd754481c332db663d2f821652a6cc2a079adfb0825fef0029",
+  "deployedBytecode": "0x606060405263ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663cfc9ca178114603c575b600080fd5b3415604657600080fd5b60526004356024356066565b604051901515815260200160405180910390f35b60005b929150505600a165627a7a72305820be61f06545aadb9095dd754481c332db663d2f821652a6cc2a079adfb0825fef0029",
+  "sourceMap": "25:95:2:-;;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "25:95:2:-;;;;;;;;;;;;;;;;;;47:71;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;111:4;47:71;;;;;:::o",
+  "source": "pragma solidity ^0.4.4;\n\ncontract Requester{\n  function proccessTask(uint taskIndex, bytes32 solution) returns(bool){}\n}\n",
+  "sourcePath": "/Users/zacharymitton/Dropbox/zac_mitton/dev/_ether/truebit-contracts/contracts/Requester.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "/Users/zacharymitton/Dropbox/zac_mitton/dev/_ether/truebit-contracts/contracts/Requester.sol",
+      "exportedSymbols": {
+        "Requester": [
+          149
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.4",
+            ".4"
+          ]
+        },
+        "id": 138,
+        "name": "PragmaDirective",
+        "src": "0:23:2"
+      },
+      {
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "contract",
+          "documentation": null,
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            149
+          ],
+          "name": "Requester",
+          "scope": 150
+        },
+        "children": [
+          {
+            "attributes": {
+              "constant": false,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "proccessTask",
+              "payable": false,
+              "scope": 149,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "taskIndex",
+                      "scope": 148,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 139,
+                        "name": "ElementaryTypeName",
+                        "src": "69:4:2"
+                      }
+                    ],
+                    "id": 140,
+                    "name": "VariableDeclaration",
+                    "src": "69:14:2"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "solution",
+                      "scope": 148,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bytes32",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes32",
+                          "type": "bytes32"
+                        },
+                        "id": 141,
+                        "name": "ElementaryTypeName",
+                        "src": "85:7:2"
+                      }
+                    ],
+                    "id": 142,
+                    "name": "VariableDeclaration",
+                    "src": "85:16:2"
+                  }
+                ],
+                "id": 143,
+                "name": "ParameterList",
+                "src": "68:34:2"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 148,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 144,
+                        "name": "ElementaryTypeName",
+                        "src": "111:4:2"
+                      }
+                    ],
+                    "id": 145,
+                    "name": "VariableDeclaration",
+                    "src": "111:4:2"
+                  }
+                ],
+                "id": 146,
+                "name": "ParameterList",
+                "src": "110:6:2"
+              },
+              {
+                "attributes": {
+                  "statements": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 147,
+                "name": "Block",
+                "src": "116:2:2"
+              }
+            ],
+            "id": 148,
+            "name": "FunctionDefinition",
+            "src": "47:71:2"
+          }
+        ],
+        "id": 149,
+        "name": "ContractDefinition",
+        "src": "25:95:2"
+      }
+    ],
+    "id": 150,
+    "name": "SourceUnit",
+    "src": "0:121:2"
+  },
+  "networks": {},
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2017-09-25T13:56:05.708Z"
+}
