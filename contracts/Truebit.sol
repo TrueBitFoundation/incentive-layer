@@ -6,19 +6,16 @@ contract Truebit{
   uint numTasks;
   uint gasPrice = 1000000; //1 million wei/instruction 
 
-  struct Task{
+  struct Task {
     bytes32 dataRoot;
     address taskGiver;
     uint    minDeposit;
     uint    gasLimit;
 
     bool solved;
-    bool proccessed;
+    bool processed;
     bytes32 globalRoot;
     bytes32 solution; //can be a root
-  }
-
-  struct Solution{
   }
 
   function createTask(bytes32 dataRoot, uint minDeposit) payable returns (uint){
@@ -27,28 +24,16 @@ contract Truebit{
     numTasks++;
     return numTasks - 1;
   }
-  function proccessTask(uint taskIndex){
-    Task t = tasks[taskIndex];
-    require(solved(t));
-    require(!t.proccessed);
-    require(TaskGiver(t.taskGiver).proccessTask(taskIndex, t.solution));
-    t.proccessed = true;
-  }
 
-
-  function solved(Task t) private returns (bool){
-    return t.solved; //stub for now
-  }
-  function cheatSolve(uint taskIndex, bytes32 globalRoot, bytes32 solution){
+  function processTask(uint taskIndex){
     Task t = tasks[taskIndex];
-    t.globalRoot = globalRoot;
-    t.solution = solution;
-    t.solved = true;
+    require(TaskGiver(t.taskGiver).processTask(taskIndex, t.solution));
+    t.processed = true;
   }
 
   function getTask(uint taskIndex) constant returns(bytes32, address, uint, uint, bool, bool, bytes32, bytes32){
     Task t = tasks[taskIndex];
-    return (t.dataRoot, t.taskGiver, t.minDeposit, t.gasLimit, t.solved, t.proccessed, t.globalRoot, t.solution);
+    return (t.dataRoot, t.taskGiver, t.minDeposit, t.gasLimit, t.solved, t.processed, t.globalRoot, t.solution);
   }
 }
 
