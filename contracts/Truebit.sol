@@ -1,5 +1,5 @@
 pragma solidity ^0.4.4;
-import "./Requester.sol";
+import "./TaskGiver.sol";
 
 contract Truebit{
   mapping (uint => Task) tasks;
@@ -8,7 +8,7 @@ contract Truebit{
 
   struct Task{
     bytes32 dataRoot;
-    address requester;
+    address taskGiver;
     uint    minDeposit;
     uint    gasLimit;
 
@@ -31,7 +31,7 @@ contract Truebit{
     Task t = tasks[taskIndex];
     require(solved(t));
     require(!t.proccessed);
-    require(Requester(t.requester).proccessTask(taskIndex, t.solution));
+    require(TaskGiver(t.taskGiver).proccessTask(taskIndex, t.solution));
     t.proccessed = true;
   }
 
@@ -48,7 +48,7 @@ contract Truebit{
 
   function getTask(uint taskIndex) constant returns(bytes32, address, uint, uint, bool, bool, bytes32, bytes32){
     Task t = tasks[taskIndex];
-    return (t.dataRoot, t.requester, t.minDeposit, t.gasLimit, t.solved, t.proccessed, t.globalRoot, t.solution);
+    return (t.dataRoot, t.taskGiver, t.minDeposit, t.gasLimit, t.solved, t.proccessed, t.globalRoot, t.solution);
   }
 }
 
