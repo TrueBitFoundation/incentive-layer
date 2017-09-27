@@ -11,6 +11,12 @@ ExampleRequester.sol is an example of how such a contract might want to use True
 # Truffle
 This is a truffle codebase (see http://truffleframework.com/docs).
 
-`npm install -g truffle` to install
+`npm install -g ethereumjs-testrpc`
+
+`npm install -g truffle` to install`
+
+`truffle migrate` to run migrations
+
 `truffle compile` to compile contracts
+
 `truffle test` to run tests
