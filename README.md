@@ -10,3 +10,6 @@ ExampleRequester.sol is an example of how such a contract might want to use True
 
 # Truffle
 This is a truffle codebase (see http://truffleframework.com/docs).
+
+`truffle compile` to compile contracts
+`truffle test` to run tests
