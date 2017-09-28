@@ -11,6 +11,7 @@ contract TaskGiver {
     truebit = Truebit(_truebit);
   }
 
+  //TaskGiver client posts task onto Truebit contract
   function createTask(bytes32 dataRoot, uint minDeposit) payable returns (uint taskIndex){
     taskIndex = truebit.createTask.value(msg.value)(dataRoot, minDeposit);
     return taskIndex;
