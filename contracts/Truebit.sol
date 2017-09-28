@@ -18,6 +18,17 @@ contract Truebit{
     bytes32 solution; //can be a root
   }
 
+  function solved(Task t) private returns (bool){
+    return t.solved; //stub for now
+  }
+
+  function cheatSolve(uint taskIndex, bytes32 globalRoot, bytes32 solution){
+    Task t = tasks[taskIndex];
+    t.globalRoot = globalRoot;
+    t.solution = solution;
+    t.solved = true;
+  }
+
   function createTask(bytes32 dataRoot, uint minDeposit) payable returns (uint){
     uint gasLimit = msg.value / gasPrice;
     tasks[numTasks] = Task(dataRoot, msg.sender, minDeposit, gasLimit, false, false, 0x0, 0x0);
@@ -35,6 +46,8 @@ contract Truebit{
     Task t = tasks[taskIndex];
     return (t.dataRoot, t.taskGiver, t.minDeposit, t.gasLimit, t.solved, t.processed, t.globalRoot, t.solution);
   }
+
+
 }
 
 

@@ -4,6 +4,7 @@ import "./Truebit.sol";
 contract TaskGiver {
 
   Truebit public truebit;
+  mapping (uint => bytes32) public tasks;
   modifier onlyTruebit(){ require(msg.sender == address(truebit)); _; }
 
   function TaskGiver(address _truebit){
@@ -15,21 +16,9 @@ contract TaskGiver {
     return taskIndex;
   }
 
+  //Called by Truebit contract to send the solution back
   function processTask(uint taskIndex, bytes32 solution) onlyTruebit returns (bool){
+    tasks[taskIndex] = solution;
     return true;
-  }
-
-  /*
-  	Task Data Spec
-  	--------------------
-    0 bytes32 dataRoot
-    1 address taskGiver
-    2 uint    minDeposit
-    3 uint    reward
-    4 uint timeout
-  */
-
-  function postTask(bytes32 dataRoot, uint timeout, uint reward, uint minDeposit) returns(bytes32, address, uint, uint, uint) {
-  	return (dataRoot, msg.sender, minDeposit, reward, timeout);
   }
 }
