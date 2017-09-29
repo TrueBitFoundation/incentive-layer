@@ -14,7 +14,7 @@ contract Solver {
   //Where solver posts deposit and hash
   //TODO generate hash of random bits
   function postBid(uint taskId, uint minDeposit) payable {
-  	bool result = truebit.postBid.value(msg.value)(msg.sender, taskId, minDeposit);
+  	bool result = truebit.postBid.value(msg.value)(address(this), taskId, minDeposit);
   	require(result);
   }
   

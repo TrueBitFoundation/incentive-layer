@@ -34,6 +34,11 @@ contract Truebit{
     uint minDeposit
   );
 
+  event PostBid(
+    uint indexed taskId,
+    address from
+  );
+
   function createTask(bytes32 dataRoot, uint minDeposit) payable returns (uint){
     uint gasLimit = msg.value / gasPrice;
     tasks[numTasks] = Task(dataRoot, msg.sender, minDeposit, gasLimit, false, false, 0x0, 0x0);
@@ -55,8 +60,7 @@ contract Truebit{
 
   //This where Solvers could commit their hashes to chain
   function postBid(address solverAddress, uint taskId, uint minDeposit) payable returns (bool) {
-    Task t = tasks[taskId];
-    require(TaskGiver(t.taskGiver).postBid(solverAddress, taskId));
+    PostBid(taskId, solverAddress);
     return true;
   }
 

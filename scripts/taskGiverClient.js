@@ -7,6 +7,8 @@ module.exports = function(address) {
 	this.address = address;
 	this.taskGiver = null;
 	this.truebit = null;
+	this.postBidEvent = null;
+	this.solvers = [];
 
 	//Set all values that derive from promises
 	this.initialize = function() {
@@ -20,15 +22,28 @@ module.exports = function(address) {
 				return Truebit.at(tb_address);
 			}).then(function(tb) {
 				this.truebit = tb;
+				return this.truebit;
+			}).then(function(tb) {
+				this.postBidEvent = this.truebit.PostBid()
 				return
-			})
+			});
 			resolve(this);
 		});
 	}
 
-	this.postTask = function(task, minDeposit, timeout) {
+	this.randomlyChooseSolver = function() {
+		return solvers[Math.random() * solvers.length]
+	}
+
+	this.startBiddingTime = function(timeout) {
 		setTimeoutPromise(timeout, function() {
-			console.log("Bidding timeout triggered")
+			this.postBidEvent.stopWatching();
+			return randomlyChooseSolver()
 		});
 	}
+
+	this.addSolver = function(address) {
+		this.solvers.push(address);
+	}
+
 }

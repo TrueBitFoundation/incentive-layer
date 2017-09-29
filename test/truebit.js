@@ -1,7 +1,8 @@
-var TaskGiver = artifacts.require("./TaskGiver.sol");
 var Truebit = artifacts.require("./Truebit.sol");
 var Solver = artifacts.require("./Solver.sol");
 var SolverClient = require("../scripts/solverClient.js");
+var TaskGiver = artifacts.require("./TaskGiver.sol");
+var TaskGiverClient = require("../scripts/taskGiverClient.js");
 
 //Need timeouts or else testrpc will throw invalid opcode errors nondeterministically
 const util = require('util');
@@ -58,9 +59,11 @@ contract('TaskGiver Integration', function(accounts) {
       return
     });
   });
+
+  var solverAddress;
   
   it("tests solver listening for PostTask event", function() {
-      var solver, postTaskEvent, sc;
+      var solver, sc;
       return Solver.deployed().then(function(_solver) {
         solver = _solver;
         return solver.truebit.call()
@@ -68,6 +71,7 @@ contract('TaskGiver Integration', function(accounts) {
         assert.equal(truebit.address, _truebitAddress);
         return
       }).then(function() {
+        solverAddress = solver.address;
         sc = new SolverClient(solver.address);
         return sc.initialize();
       }).then(function(_sc) {
@@ -81,4 +85,21 @@ contract('TaskGiver Integration', function(accounts) {
         return
       });
   });
+
+  it("tests task giver for receiving bids", function() {
+    return TaskGiver.deployed().then(function(_taskGiver) {
+      tg = new TaskGiverClient(_taskGiver.address);
+      return tg.initialize();
+    }).then(function(_tg) {
+      _tg.postBidEvent.watch(function(err, result) {//event handlers seem to like the returned promise
+        if(!err) {
+          assert.equal(solverAddress, result.args.from);
+          assert.equal(0, result.args.taskId.toNumber());
+          tg.addSolver(result.args.from);//Normal method calls don't like the promise, but do work with global object
+        }
+      });
+    });
+  });
+
+  console.log("Press ctrl+c to exit tests");
 });
