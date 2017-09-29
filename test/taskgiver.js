@@ -5,5 +5,6 @@ const util = require('util');
 const setTimeoutPromise = util.promisify(setTimeout);
 
 contract('TaskGiver tests', function(accounts) {
+	//console.log(TaskGiver)
 
 });

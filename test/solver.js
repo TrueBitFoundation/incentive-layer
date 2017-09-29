@@ -1,13 +1,25 @@
 var Solver = artifacts.require("./Solver.sol");
-var solverClient = require("../scripts/solverClient.js");
-var SolverClient = new solverClient();
+var SolverClient = require("../scripts/solverClient.js");
+
 
 //Need timeouts or else testrpc will throw invalid opcode errors nondeterministically
 const util = require('util');
 const setTimeoutPromise = util.promisify(setTimeout);
 
 contract('Solver tests', function(accounts) {
+
 	it("tests solver getting block hash", function() {
-		console.log(SolverClient.submitRandomHash());
-    })
+		var sc;
+		Solver.deployed().then(function(_solver) {
+			sc = new SolverClient(_solver.address);
+			return sc
+		}).then(function(_sc) {
+			var randomHash = sc.createRandomHash();
+			if(sc.submittingCorrectSolution()) {
+				console.log("Solving task, posting correct solution");
+			}else{
+				console.log("Solving task partially, submitting incorrect solution");
+			}
+		});
+	});
 });
