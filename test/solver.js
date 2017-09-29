@@ -12,7 +12,7 @@ contract('Solver tests', function(accounts) {
 		var sc;
 		Solver.deployed().then(function(_solver) {
 			sc = new SolverClient(_solver.address);
-			return sc
+			return sc.initialize();
 		}).then(function(_sc) {
 			var randomHash = sc.createRandomHash();
 			if(sc.submittingCorrectSolution()) {
@@ -22,4 +22,6 @@ contract('Solver tests', function(accounts) {
 			}
 		});
 	});
+
+	
 });

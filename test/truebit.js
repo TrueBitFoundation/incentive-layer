@@ -1,6 +1,7 @@
 var TaskGiver = artifacts.require("./TaskGiver.sol");
 var Truebit = artifacts.require("./Truebit.sol");
-var Solver = artifacts.require("./Solver.sol")
+var Solver = artifacts.require("./Solver.sol");
+var SolverClient = require("../scripts/solverClient.js");
 
 //Need timeouts or else testrpc will throw invalid opcode errors nondeterministically
 const util = require('util');
@@ -58,8 +59,8 @@ contract('TaskGiver Integration', function(accounts) {
     });
   });
   
-  it("tests listening for PostTask event", function() {
-      var solver, postTaskEvent;
+  it("tests solver listening for PostTask event", function() {
+      var solver, postTaskEvent, sc;
       return Solver.deployed().then(function(_solver) {
         solver = _solver;
         return solver.truebit.call()
@@ -67,26 +68,17 @@ contract('TaskGiver Integration', function(accounts) {
         assert.equal(truebit.address, _truebitAddress);
         return
       }).then(function() {
-        //Listen for PostTask event
-        postTaskEvent = truebit.PostTask(); 
-
-        postTaskEvent.watch(function(error, result) {
-          if(!error) {
-            console.log("Task Posted");
-            assert.equal(minDeposit, result.args.minDeposit.toNumber());
-            assert.equal(1, result.args.taskId.toNumber());
-            solver.postBid(result.args.minDeposit.toNumber(), result.args.taskId.toNumber());
-          }else{
-            console.error(error);
+        sc = new SolverClient(solver.address);
+        return sc.initialize();
+      }).then(function(_sc) {
+        _sc.postTaskEvent.watch(function(err, result) {
+          if(!err) {
+            assert.equal(0, result.args.taskId.toNumber());
+            assert.equal(1000000000000000000, result.args.minDeposit.toNumber());
+            _sc.solver.postBid(result.args.taskId.toNumber(), result.args.minDeposit.toNumber());
           }
         });
         return
-      }).then(function() {
-          //Emit PostTask
-          taskGiver.createTask(dataRoot, minDeposit, {value: value, from: accounts[0]});
-          return 
-      }).then(function() {
-          postTaskEvent.stopWatching()
       });
   });
 });
