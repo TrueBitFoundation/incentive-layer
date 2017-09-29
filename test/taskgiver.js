@@ -1,10 +1,14 @@
 var TaskGiver = artifacts.require("./TaskGiver.sol");
-
-//Need timeouts or else testrpc will throw invalid opcode errors nondeterministically
-const util = require('util');
-const setTimeoutPromise = util.promisify(setTimeout);
+var TaskGiverClient = require("../scripts/taskGiverClient.js");
 
 contract('TaskGiver tests', function(accounts) {
-	//console.log(TaskGiver)
-
+	it("tests initialization of TaskGiver client", function() {
+		var tg;
+		TaskGiver.deployed().then(function(_tg) {
+			tg = new TaskGiverClient(_tg.address);
+			return tg.initialize();
+		}).then(function(_tg) {
+			assert.equal(TaskGiver.deployed().address, tg.address);
+		});
+	});
 });
