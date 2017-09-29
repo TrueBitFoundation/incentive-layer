@@ -1,6 +1,7 @@
 var Solver = artifacts.require("./Solver.sol");
 var solverClient = require("../scripts/solverClient.js");
 var SolverClient = new solverClient();
+var SHA256 = require("crypto-js/sha256");
 
 //Need timeouts or else testrpc will throw invalid opcode errors nondeterministically
 const util = require('util');
