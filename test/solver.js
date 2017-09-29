@@ -1,4 +1,4 @@
-var TaskGiver = artifacts.require("./TaskGiver.sol");
+var Solver = artifacts.require("./Solver.sol");
 
 //Need timeouts or else testrpc will throw invalid opcode errors nondeterministically
 const util = require('util');

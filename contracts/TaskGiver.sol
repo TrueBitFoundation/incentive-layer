@@ -5,6 +5,7 @@ contract TaskGiver {
 
   Truebit public truebit;
   mapping (uint => bytes32) public tasks;
+  mapping (address => uint) public solvers;//Maps solvers to taskIds
   modifier onlyTruebit(){ require(msg.sender == address(truebit)); _; }
 
   function TaskGiver(address _truebit){
@@ -22,4 +23,10 @@ contract TaskGiver {
     tasks[taskIndex] = solution;
     return true;
   }
+
+  function postBid(address solverAddress, uint taskId) onlyTruebit returns (bool) {
+    solvers[solverAddress] = taskId;
+    return true;
+  }
+
 }

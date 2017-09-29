@@ -1,13 +1,15 @@
 var TaskGiver = artifacts.require("./TaskGiver.sol");
 var Truebit = artifacts.require("./Truebit.sol");
+var Solver = artifacts.require("./Solver.sol")
 
 //Need timeouts or else testrpc will throw invalid opcode errors nondeterministically
 const util = require('util');
 const setTimeoutPromise = util.promisify(setTimeout);
 
 contract('TaskGiver Integration', function(accounts) {
-  it("get instance, check truebit address", function() {
-    var truebit, taskGiver, dataRoot, minDeposit, value, taskIndex0, globalRoot0, solutions0
+  var truebit, taskGiver, dataRoot, minDeposit, value, taskIndex0, globalRoot0, solutions0
+
+  it("tests TaskGiver & Truebit integration", function() {
     return Truebit.deployed().then(function(_truebit) {
       truebit = _truebit
       return TaskGiver.deployed()
@@ -54,5 +56,37 @@ contract('TaskGiver Integration', function(accounts) {
       assert.equal(taskGiverSolution, solution0)
       return
     });
+  });
+  
+  it("tests listening for PostTask event", function() {
+      var solver, postTaskEvent;
+      return Solver.deployed().then(function(_solver) {
+        solver = _solver;
+        return solver.truebit.call()
+      }).then(function(_truebitAddress) {
+        assert.equal(truebit.address, _truebitAddress);
+        return
+      }).then(function() {
+        //Listen for PostTask event
+        postTaskEvent = truebit.PostTask(); 
+
+        postTaskEvent.watch(function(error, result) {
+          if(!error) {
+            console.log("Task Posted");
+            assert.equal(minDeposit, result.args.minDeposit.toNumber());
+            assert.equal(1, result.args.taskId.toNumber());
+            solver.postBid(result.args.minDeposit.toNumber(), result.args.taskId.toNumber());
+          }else{
+            console.error(error);
+          }
+        });
+        return
+      }).then(function() {
+          //Emit PostTask
+          taskGiver.createTask(dataRoot, minDeposit, {value: value, from: accounts[0]});
+          return 
+      }).then(function() {
+          postTaskEvent.stopWatching()
+      });
   });
 });

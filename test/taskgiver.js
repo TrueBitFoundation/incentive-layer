@@ -4,6 +4,6 @@ var TaskGiver = artifacts.require("./TaskGiver.sol");
 const util = require('util');
 const setTimeoutPromise = util.promisify(setTimeout);
 
-contract('Solver tests', function(accounts) {
+contract('TaskGiver tests', function(accounts) {
 
 });
