@@ -8,10 +8,6 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 contract('Solver tests', function(accounts) {
 	it("tests solver getting block hash", function() {
-		console.log(SolverClient.getBlockHash());
+		console.log(SolverClient.submitRandomHash());
     })
-
-    it("tests inputting address", function() {
-    	console.log(Solver.deployed().address)
-    });
 });
