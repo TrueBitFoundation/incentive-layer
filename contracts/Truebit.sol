@@ -18,9 +18,6 @@ contract Truebit{
     bytes32 solution; //can be a root
   }
 
-  function solved(Task t) private returns (bool){
-    return t.solved; //stub for now
-  }
 
   function cheatSolve(uint taskIndex, bytes32 globalRoot, bytes32 solution){
     Task t = tasks[taskIndex];
@@ -47,8 +44,14 @@ contract Truebit{
     return numTasks - 1;
   }
 
+  function solved(Task t) private returns (bool) {
+    return t.solved;
+  }
+
   function processTask(uint taskIndex){
     Task t = tasks[taskIndex];
+    require(solved(t));
+    require(!t.processed);
     require(TaskGiver(t.taskGiver).processTask(taskIndex, t.solution));
     t.processed = true;
   }
