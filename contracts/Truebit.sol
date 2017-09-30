@@ -24,6 +24,7 @@ contract Truebit{
     numTasks++;
     return numTasks - 1;
   }
+
   function proccessTask(uint taskIndex){
     Task t = tasks[taskIndex];
     require(solved(t));
@@ -35,6 +36,7 @@ contract Truebit{
   function solved(Task t) private returns (bool){
     return t.solved;
   }
+  
   function cheatSolve(uint taskIndex, bytes32 globalRoot, bytes32 solution){
     Task t = tasks[taskIndex];
     t.globalRoot = globalRoot;
