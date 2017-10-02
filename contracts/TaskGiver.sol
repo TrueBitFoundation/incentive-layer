@@ -1,9 +1,9 @@
 pragma solidity ^0.4.4;
 
-import './AgentManager.sol';
+import './AccountManager.sol';
 import './Solver.sol';
 
-contract TaskGiver is AgentManager {
+contract TaskGiver is AccountManager {
 	uint numTasks = 0;
 	event SendTask(address _from, uint id, uint minDeposit);
 

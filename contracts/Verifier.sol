@@ -1,9 +1,9 @@
 pragma solidity ^0.4.4;
 
-import './AgentManager.sol';
+import './AccountManager.sol';
 import './Solver.sol';
 
-contract Verifier is AgentManager {
+contract Verifier is AccountManager {
 
 	function sendChallenge(address solver, uint id, bytes32 solution, uint minDeposit) returns (bool) {
 		require(balances[tx.origin] >= minDeposit);

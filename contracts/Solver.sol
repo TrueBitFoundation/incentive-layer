@@ -1,9 +1,9 @@
 pragma solidity ^0.4.4;
 
-import './AgentManager.sol';
+import './AccountManager.sol';
 import './TaskGiver.sol';
 
-contract Solver is AgentManager {
+contract Solver is AccountManager {
 
 	struct Task {
 		address owner;

@@ -1,9 +1,9 @@
 pragma solidity ^0.4.4;
 
-contract AgentManager {
+contract AccountManager {
   
   mapping(address => uint) balances;
-  function AgentManager() {
+  function AccountManager() {
     balances[tx.origin] = 0;
   }
 
