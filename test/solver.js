@@ -24,13 +24,13 @@ contract('Solver', function(accounts) {
     });
   });
 
-  it("should solve task", function() {
+  it("should solve task and receive challenge", function() {
     var solver;
     return Solver.deployed().then(function(instance) {
         solver = instance;
-        return solver.solveTask.call(0x0);
-    }).then(function(result) {
-        assert.isTrue(result);
+        return solver.solveTask(0x0, 0, 1000);
+    }).then(function(tx) {
+        return solver.receiveChallenge(0, {from: accounts[3]});
     });
   });
 });

@@ -12,12 +12,14 @@ contract TaskGiver is AgentManager {
 	struct Task {
 		address owner;
 		address[] solvers;
+		uint minDeposit;
 	}
 
 	function sendTask(uint minDeposit) returns (bool) {
 		require(balances[tx.origin] >= minDeposit);
 		Task t;
 		t.owner = tx.origin;
+		t.minDeposit = minDeposit;
 		tasks[numTasks] = t;
 		SendTask(tx.origin, numTasks, minDeposit);
 		numTasks++;
@@ -32,7 +34,7 @@ contract TaskGiver is AgentManager {
 
 	function selectSolver(uint id) returns (address) {
 		address solver = tasks[id].solvers[0];
-		require(Solver(solver).solveTask(0x0));
+		require(Solver(solver).solveTask(0x0, id, tasks[id].minDeposit));
 		return solver;
 	}
 }
