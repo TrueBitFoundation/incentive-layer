@@ -13,7 +13,7 @@ This is a truffle codebase (see http://truffleframework.com/docs).
 
 `npm install -g ethereumjs-testrpc`
 
-`npm install -g truffle` to install`
+`npm install -g truffle` to install
 
 `truffle migrate` to run migrations
 

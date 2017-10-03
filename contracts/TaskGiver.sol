@@ -74,7 +74,7 @@ contract TaskGiver is AccountManager {
 		require(tx.origin == tasks[taskID].owner);
 		uint solutionsLength = tasks[taskID].solutions.length;
 
-		//get solution hash with most signature
+		//get solution hash with most signatures
 		uint maxSolutionsHash = tasks[taskID].solutions[0];
 		uint maxSignatures = solutionSignatures[taskID][maxSolutionsHash].length;
 		for(uint i = 0; i < solutionsLength; i++) {
