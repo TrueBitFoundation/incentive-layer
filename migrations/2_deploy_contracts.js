@@ -11,6 +11,4 @@ module.exports = function(deployer, network, thing) {
   deployer.deploy(TaskGiver);
   deployer.deploy(Solver);
   deployer.deploy(Verifier);
-  // deployer.link(ConvertLib, MetaCoin);
-  // deployer.deploy(MetaCoin);
 };

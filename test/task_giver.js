@@ -1,4 +1,6 @@
 var TaskGiver = artifacts.require('./TaskGiver.sol');
+var Web3 = require('web3');
+var web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 contract('TaskGiver', function(accounts) {
   it("should assert true", function() {
@@ -20,7 +22,9 @@ contract('TaskGiver', function(accounts) {
         return taskGiver.selectSolver.call(0);
     }).then(function(solver) {
         assert.equal(solver, accounts[1]);
-        return
+        return taskGiver.receiveSolutionHash(accounts[4], 0, 0x0);
+    }).then(function(tx) {
+        return taskGiver.completeTask(0, {from: accounts[0]});
     });
   });
 });
