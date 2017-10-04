@@ -1,22 +1,72 @@
-# WIP
-Incentive layer contracts and deployment information.
+# Truebit Contracts
 
-# API
-Requester.sol will show the api a contract must have in order to create a task on truebit.
+[Truebit](https://truebit.io) seeks to extend the class of computations that can, with high probability, be performed 'correctly' in a decentralized network of financially rational processors.
 
-The basic idea is that the contract must have a way to call `truebit.createTask()`(with payment). This submits a task and returns its id. Once the task is complete it will call `proccessTask` on the contract that created it (which it must have).
 
-ExampleRequester.sol is an example of how such a contract might want to use Truebit. It is able to handle the solution from Truebit and updates a variable.
+This working sketch follows section 4 of the [whitepaper](https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf) in an implementation of the Incentive layer contracts. The structure is aimed at a core library of common elements to be used by core Truebit contracts, integrating aspects unsupported by libraries (e.g. payable functions). This is why the balances used in the library code are agnostic to interpretation, making it easy to support both ETH or other tokens [though this is not yet complete].
 
-# Truffle
-This is a truffle codebase (see http://truffleframework.com/docs).
 
-`npm install -g ethereumjs-testrpc`
 
-`npm install -g truffle` to install`
+***
 
-`truffle migrate` to run migrations
+### Incentive Layer
 
-`truffle compile` to compile contracts
 
-`truffle test` to run tests
+#### [`Incentive`](contracts/Incentive.sol)
+
+Contains common components needed throughout the lifecycle of a Task.
+
+
+
+***
+
+##### `create(bytes32 init, uint deposit, uint min_deposit, uint reward)`
+
+*// todo*
+
+
+*Inputs*
+
+
+
+*Outputs*
+
+
+
+***
+
+##### `bid(Task storage Task)`
+
+*// todo*
+
+*Inputs*
+
+
+
+*Outputs*
+
+***
+
+##### `solve(bytes32[2] solution, uint steps)`
+
+*// todo*
+
+*Inputs*
+
+
+
+*Outputs*
+
+
+***
+
+
+##### Jackpots
+
+##### Taxes
+
+##### Deposits
+
+##### Forced Errors
+
+##### Solver and Verifier Selection
