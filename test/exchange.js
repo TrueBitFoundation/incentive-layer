@@ -24,28 +24,20 @@ contract('TrueBit Exchange', function(accounts) {
 		  			var from = result.args._from;
 		  			var taskID = result.args.id.toNumber();
 		  			var minDeposit = result.args.minDeposit.toNumber();
-		  			if(minDeposit >= 6000) {
-		  				console.log(from);
-		  				console.log(taskID);
-		  				console.log(minDeposit);
-		  				//solver.sendBid(from, taskID, minDeposit, {from: accounts[6]})
-		  			}
+		  			//console.log(from + " " + taskID + " " + minDeposit);
 	  			}else{
 	  				console.error(error);
 	  			}
 	  		});
 
-	  		submitSolution = solver.SendSolution();
-	  		submitSolution.watch(function(error, result) {
+	  		sendSolution = solver.SendSolution();
+	  		sendSolution.watch(function(error, result) {
 	  			if(!error) {
 	  				var from = result.args._from;
 	  				var taskID = result.args.id.toNumber();
 	  				var solution = result.args.solution;
 	  				var minDeposit = result.args.minDeposit.toNumber();
-					console.log(from);
-					console.log(taskID);
-					console.log(solution);
-					console.log(minDeposit);
+					//console.log(from + " " + taskID + " " + solution + " " + minDeposit);
 	  			}
 	  		});
 
@@ -53,8 +45,6 @@ contract('TrueBit Exchange', function(accounts) {
   		});
   	}).then(function() {
   		return taskGiver.sendTask(6000, {from: accounts[5]});
-  	}).then(function(tx) {
-
   	});
   });
 });
@@ -69,3 +59,5 @@ function initializeAccounts(accountManagers, accounts) {
 		resolve();
 	})
 }
+
+console.log("Press ctrl+c to exit tests");

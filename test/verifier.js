@@ -31,7 +31,7 @@ contract('Verifier', function(accounts) {
     }).then(function(tx) {
         return taskGiver.sendTask(5000, {from: accounts[4]});
     }).then(function(tx) {
-        return verifier.sendSolutionHash(taskGiver.address, 5000, 0, 0x0);
+        return verifier.sendSolutionHash(taskGiver.address, 4500, 0, 0x0);
     });
   });
 });

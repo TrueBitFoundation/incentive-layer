@@ -35,6 +35,7 @@ contract TaskGiver is AccountManager {
 	}
 
 	function selectSolver(uint id) returns (address) {
+		//address solver = tasks[id].solvers[randomNum % tasks[id.solvers]].length;
 		address solver = tasks[id].solvers[0];
 		require(Solver(solver).solveTask(0x0, id, tasks[id].minDeposit));
 		return solver;
