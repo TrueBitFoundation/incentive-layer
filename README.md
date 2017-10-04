@@ -6,7 +6,12 @@
 This working sketch follows section 4 of the [whitepaper](https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf) in an implementation of the Incentive layer contracts. The structure is aimed at a core library of common elements to be used by core Truebit contracts in facilitating use by ordinary contracts.
 
 
+**Disclaimer** - this is a work in progress; expect things to fail.
+
 ***
+
+
+
 
 ### Incentive Layer
 
@@ -19,7 +24,7 @@ Contains common components needed throughout the lifecycle of a Task.
 
 ***
 
-##### `create(bytes32 init, uint deposit, uint min_deposit, uint reward)`
+##### `post(bytes32 init, uint deposit, uint min_deposit, uint reward)`
 
 *// todo*
 
@@ -34,7 +39,7 @@ Contains common components needed throughout the lifecycle of a Task.
 
 ***
 
-##### `bid(Task storage Task)`
+##### `bid()`
 
 *// todo*
 
