@@ -57,6 +57,7 @@ contract TaskGiver is AccountManager {
 		} else {
 			solutionSignatures[taskID][solutionHash].push(from);
 		}
+		log0(sha3(from));
 		return true;
 	}
 
@@ -78,8 +79,8 @@ contract TaskGiver is AccountManager {
 		}
 	}
 
-	function completeTask(uint taskID) returns (bool) {
-		require(tx.origin == tasks[taskID].owner);
+	function completeTask(uint taskID, address addr) returns (bool) {
+		require(addr == tasks[taskID].owner);
 		uint solutionsLength = tasks[taskID].solutions.length;
 
 		//get solution hash with most signatures
@@ -98,5 +99,6 @@ contract TaskGiver is AccountManager {
 		punish(taskID, maxSolutionsHash);
 
 		delete tasks[taskID];
+		log0(sha3(addr));
 	}
 }

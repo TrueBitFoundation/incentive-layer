@@ -27,8 +27,11 @@ contract('TaskGiver', function(accounts) {
     }).then(function(result) {
         assert.isTrue(result);
         return taskGiver.receiveSolutionHash(accounts[4], 0, 0x0);
-    }).then(function(result) {
-        return taskGiver.completeTask(0, {from: accounts[0]});
+    }).then(function(tx) {
+        assert.equal(web3.utils.soliditySha3(accounts[4]), tx.receipt.logs[0].data);
+        return taskGiver.completeTask(0, accounts[0]);
+    }).then(function(tx) {
+        assert.equal(web3.utils.soliditySha3(accounts[0]), tx.receipt.logs[0].data);
     });
   });
 });
