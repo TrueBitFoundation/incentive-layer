@@ -23,9 +23,9 @@ contract('Solver', function(accounts) {
         taskGiver = _taskGiver;
         return taskGiver.submitDeposit(accounts[0], {value: 10000});
     }).then(function(tx) {
-        return taskGiver.sendTask(5000, address);
+        return taskGiver.sendTask(4800, address);
     }).then(function(tx) {
-    	return solver.sendBid(taskGiver.address, 0, 5000, accounts[1]);
+    	return solver.sendBid(taskGiver.address, 0, 4800, accounts[1]);
     }).then(function(tx) {
         assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
     	return

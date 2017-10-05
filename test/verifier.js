@@ -32,7 +32,7 @@ contract('Verifier', function(accounts) {
         taskGiver = _taskGiver;
         return taskGiver.submitDeposit(accounts[3], {value: 10000});
     }).then(function(tx) {
-        return taskGiver.sendTask(5000, accounts[3]);
+        return taskGiver.sendTask(4500, accounts[3]);
     }).then(function(tx) {
         return verifier.sendSolutionHash(accounts[2], taskGiver.address, 4500, 0, 0x0);
     }).then(function(tx) {

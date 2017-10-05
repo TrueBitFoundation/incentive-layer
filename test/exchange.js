@@ -13,51 +13,20 @@ contract('TrueBit Exchange', function(accounts) {
   		return Verifier.deployed();
   	}).then(function(_verifier) {
   		verifier = _verifier;
-  		return initializeAccounts([taskGiver, solver, verifier], accounts);
-  	}).then(function() {
-  		return new Promise(function(resolve) {
-
-	  		//setup event handlers
-	  		sendTask = taskGiver.SendTask();
-	  		sendTask.watch(function(error, result) {
-	  			if(!error) {
-		  			var from = result.args._from;
-		  			var taskID = result.args.id.toNumber();
-		  			var minDeposit = result.args.minDeposit.toNumber();
-		  			//console.log(from + " " + taskID + " " + minDeposit);
-	  			}else{
-	  				console.error(error);
-	  			}
-	  		});
-
-	  		sendSolution = solver.SendSolution();
-	  		sendSolution.watch(function(error, result) {
-	  			if(!error) {
-	  				var from = result.args._from;
-	  				var taskID = result.args.id.toNumber();
-	  				var solution = result.args.solution;
-	  				var minDeposit = result.args.minDeposit.toNumber();
-					//console.log(from + " " + taskID + " " + solution + " " + minDeposit);
-	  			}
-	  		});
-
-	  		resolve();
-  		});
-  	}).then(function() {
+  		return taskGiver.submitDeposit(accounts[5], {value: 10000});
+  	}).then(function(tx) {
+  		return solver.submitDeposit(accounts[6], {value: 10000});
+  	}).then(function(tx) {
+  		return verifier.submitDeposit(accounts[7], {value: 10000});
+  	}).then(function(tx) {
   		return taskGiver.sendTask(6000, accounts[5]);
+  	}).then(function(tx) {
+  		sendTask = taskGiver.SendTask();
+  		sendTask.watch(function(error, result) {
+  			console.log(result);
+  		});
   	});
   });
 });
 
-function initializeAccounts(accountManagers, accounts) {
-	return new Promise(function(resolve) {
-		for(i = 0; i < accountManagers.length; i++) {
-			for(j = 5; j < 8; j++) {
-				accountManagers[i].submitDeposit(accounts[j], {value: 100000});
-			}
-		}
-		resolve();
-	})
-}
-
-console.log("Press ctrl+c to exit tests");
+console.log("ctrl + c to end tests");

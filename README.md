@@ -32,10 +32,6 @@ To run the tests with Docker:
 
 `truffle test`
 
-Contributors can test their current changes to the project with:
-
-`docker build .`
-
 # Truffle
 This is a truffle codebase (see http://truffleframework.com/docs).
 

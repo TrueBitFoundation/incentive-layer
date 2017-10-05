@@ -23,5 +23,5 @@ contract Verifier is AccountManager {
 		log0(sha3(_to));		
 		return true;
 	}
-
+	
 }

@@ -17,13 +17,4 @@ contract AccountManager {
     log0(sha3(addr));
   }
 
-  //from: https://ethereum.stackexchange.com/questions/884/how-to-convert-an-address-to-bytes-in-solidity
-  function toBytes(address a) constant returns (bytes b){
-   assembly {
-        let m := mload(0x40)
-        mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, a))
-        mstore(0x40, add(m, 52))
-        b := m
-   }
-  }
 }
