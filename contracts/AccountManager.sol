@@ -4,15 +4,15 @@ contract AccountManager {
   
   mapping(address => uint) balances;
   function AccountManager() {
-    balances[tx.origin] = 0;
+    //balances[tx.origin] = 0;
   }
 
-  function getBalance() returns (uint) {
-  	return balances[tx.origin];
+  function getBalance(address addr) returns (uint) {
+  	return balances[addr];
   }
 
-  function submitDeposit() payable returns (bool) {
-  	uint balance = balances[tx.origin];
-  	balances[tx.origin] = balance + msg.value;
+  function submitDeposit(address addr) payable returns (bool) {
+  	uint balance = balances[addr];
+  	balances[addr] = balance + msg.value;
   }
 }

@@ -7,12 +7,12 @@ contract('TaskGiver', function(accounts) {
   	var taskGiver;
     return TaskGiver.deployed().then(function(instance) {
     	taskGiver = instance;
-    	return taskGiver.getBalance.call({from: accounts[0]});
+    	return taskGiver.getBalance.call(accounts[0]);
     }).then(function(balance) {
     	assert.equal(0, balance.toNumber());
-    	return taskGiver.submitDeposit({value: 10000, from: accounts[0]});
+    	return taskGiver.submitDeposit(accounts[0], {value: 10000});
     }).then(function(result) {
-    	return taskGiver.getBalance.call({from: accounts[0]});
+    	return taskGiver.getBalance.call(accounts[0]);
     }).then(function(balance) {
     	assert.equal(10000, balance.toNumber());
     	return taskGiver.sendTask(5000, {from: accounts[0]});

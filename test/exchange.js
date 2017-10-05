@@ -53,7 +53,7 @@ function initializeAccounts(accountManagers, accounts) {
 	return new Promise(function(resolve) {
 		for(i = 0; i < accountManagers.length; i++) {
 			for(j = 5; j < 8; j++) {
-				accountManagers[i].submitDeposit({value: 100000, from: accounts[j]});
+				accountManagers[i].submitDeposit(accounts[j], {value: 100000});
 			}
 		}
 		resolve();

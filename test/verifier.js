@@ -7,14 +7,14 @@ contract('Verifier', function(accounts) {
   	var verifier, solver, taskGiver;
     return Verifier.deployed().then(function(instance) {
     	verifier = instance;
-    	return verifier.getBalance.call({from: accounts[0]});
+    	return verifier.getBalance.call(accounts[0]);
     }).then(function(balance) {
     	assert.equal(0, balance.toNumber());
-    	return verifier.submitDeposit({value: 10000, from: accounts[0]});
+    	return verifier.submitDeposit(accounts[0], {value: 10000});
     }).then(function(result) {
     	// console.log(result);
     	// assert.isTrue(result);
-    	return verifier.getBalance.call({from: accounts[0]});
+    	return verifier.getBalance.call(accounts[0]);
     }).then(function(balance) {
     	assert.equal(10000, balance.toNumber());
     	return Solver.deployed();
@@ -27,7 +27,7 @@ contract('Verifier', function(accounts) {
         return TaskGiver.deployed();
     }).then(function(_taskGiver) {
         taskGiver = _taskGiver;
-        return taskGiver.submitDeposit({from: accounts[4], value: 10000});
+        return taskGiver.submitDeposit(accounts[4], {value: 10000});
     }).then(function(tx) {
         return taskGiver.sendTask(5000, {from: accounts[4]});
     }).then(function(tx) {
