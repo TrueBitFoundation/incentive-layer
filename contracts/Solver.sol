@@ -14,9 +14,9 @@ contract Solver is AccountManager {
 
 	event SendSolution(address _from, uint id, bytes32 solution, uint minDeposit);
 
-	function sendBid(address origin, uint id, uint minDeposit) {
-		require(balances[tx.origin] >= minDeposit);
-		require(TaskGiver(origin).receiveBid(id));
+	function sendBid(address origin, uint id, uint minDeposit, address addr) {
+		require(balances[addr] >= minDeposit);
+		require(TaskGiver(origin).receiveBid(id, addr));
 	}
 
 	function solveTask(bytes32 task, uint id, uint minDeposit) returns (bool) {

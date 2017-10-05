@@ -6,12 +6,14 @@ import './Solver.sol';
 contract TaskGiver is AccountManager {
 	uint numTasks = 0;
 	event SendTask(address _from, uint id, uint minDeposit);
+	event SolverSelection(uint indexed taskID);
 
 	mapping(uint => Task) tasks;
 	mapping(uint => mapping(uint => address[])) solutionSignatures;
 
 	struct Task {
 		address owner;
+		mapping(address => uint) selectedSolvers;
 		address[] solvers;
 		uint minDeposit;
 		uint[] solutions;
@@ -28,17 +30,20 @@ contract TaskGiver is AccountManager {
 		return true;
 	}
 
-	function receiveBid(uint id) returns(bool) {
+	function receiveBid(uint id, address addr) returns(bool) {
 		Task t = tasks[id];
-		t.solvers.push(tx.origin);
+		t.solvers.push(addr);
 		return true;
 	}
 
 	function selectSolver(uint id) returns (address) {
-		//address solver = tasks[id].solvers[randomNum % tasks[id.solvers]].length;
-		address solver = tasks[id].solvers[0];
-		require(Solver(solver).solveTask(0x0, id, tasks[id].minDeposit));
-		return solver;
+		//address randomSolver = tasks[id].solvers[randomNum % tasks[id.solvers].length];
+		tasks[id].selectedSolvers[tasks[id].solvers[0]] = 1;
+		SolverSelection(id);
+	}
+
+	function isSelectedSolver(uint id, address addr) returns (bool) {
+		return 1 == tasks[id].selectedSolvers[addr];
 	}
 
 	function receiveSolutionHash(address from, uint taskID, bytes32 _solutionHash) returns (bool) {

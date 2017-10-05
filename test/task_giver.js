@@ -17,13 +17,15 @@ contract('TaskGiver', function(accounts) {
     	assert.equal(10000, balance.toNumber());
     	return taskGiver.sendTask(5000, {from: accounts[0]});
     }).then(function(tx) {
-    	return taskGiver.receiveBid(0, {from: accounts[1]});
+    	return taskGiver.receiveBid(0, accounts[1]);//account[1] sends bid to task0
     }).then(function(tx) {
-        return taskGiver.selectSolver.call(0);
+        return taskGiver.selectSolver(0);
     }).then(function(solver) {
-        assert.equal(solver, accounts[1]);
+        return taskGiver.isSelectedSolver.call(0, accounts[1]);
+    }).then(function(result) {
+        assert.isTrue(result);
         return taskGiver.receiveSolutionHash(accounts[4], 0, 0x0);
-    }).then(function(tx) {
+    }).then(function(result) {
         return taskGiver.completeTask(0, {from: accounts[0]});
     });
   });

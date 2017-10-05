@@ -4,7 +4,7 @@ contract AccountManager {
   
   mapping(address => uint) balances;
   function AccountManager() {
-    //balances[tx.origin] = 0;
+    
   }
 
   function getBalance(address addr) returns (uint) {

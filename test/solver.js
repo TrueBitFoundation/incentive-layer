@@ -19,7 +19,7 @@ contract('Solver', function(accounts) {
     	assert.equal(10000, balance.toNumber());
     	return TaskGiver.deployed();
     }).then(function(tg) {
-    	return solver.sendBid(tg.address, 0, 5000, {from: accounts[0]});
+    	return solver.sendBid(tg.address, 0, 5000, accounts[0]);
     }).then(function(tx) {
     	//return
     });
