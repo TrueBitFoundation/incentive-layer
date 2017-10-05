@@ -27,8 +27,8 @@ contract Solver is AccountManager {
 		return true;
 	}
 
-	function receiveChallenge(uint id) returns (bool) {
-		tasks[id].challengers.push(tx.origin);
+	function receiveChallenge(uint id, address from) returns (bool) {
+		tasks[id].challengers.push(from);
 		return true;
 	}
 }

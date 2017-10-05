@@ -8,15 +8,19 @@ contract Verifier is AccountManager {
 
 	mapping(address => mapping(uint => bytes32)) solutions;
 
-	function sendChallenge(address solver, uint id, bytes32 solution, uint minDeposit) returns (bool) {
-		require(balances[tx.origin] >= minDeposit);
-		require(Solver(solver).receiveChallenge(id));
+	function sendChallenge(address _from, address _to, uint id, bytes32 solution, uint minDeposit) returns (bool) {
+		require(balances[_from] >= minDeposit);
+		//require(Solver(_to).receiveChallenge(id, _from));
+		log0(sha3(_from));
+		log0(sha3(_to));
 		return true;
 	}
 
-	function sendSolutionHash(address _to, uint minDeposit, uint taskID, bytes32 solutionHash) returns (bool) {
-		require(balances[tx.origin] >= minDeposit);
-		require(TaskGiver(_to).receiveSolutionHash(tx.origin, taskID, solutionHash));
+	function sendSolutionHash(address _from, address _to, uint minDeposit, uint taskID, bytes32 solutionHash) returns (bool) {
+		require(balances[_from] >= minDeposit);
+		require(TaskGiver(_to).receiveSolutionHash(_from, taskID, solutionHash));
+		log0(sha3(_from));
+		log0(sha3(_to));		
 		return true;
 	}
 

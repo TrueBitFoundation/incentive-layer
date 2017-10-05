@@ -14,6 +14,7 @@ contract AccountManager {
   function submitDeposit(address addr) payable returns (bool) {
   	uint balance = balances[addr];
   	balances[addr] = balance + msg.value;
+    log0(sha3(addr));
   }
 
   //from: https://ethereum.stackexchange.com/questions/884/how-to-convert-an-address-to-bytes-in-solidity

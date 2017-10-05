@@ -32,6 +32,7 @@ contract TaskGiver is AccountManager {
 
 	function receiveBid(uint id, address addr) returns(bool) {
 		Task t = tasks[id];
+		require(!(t.owner == 0x0));
 		t.solvers.push(addr);
 		log0(bytes32(sha3(addr)));
 		return true;

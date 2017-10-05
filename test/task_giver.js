@@ -11,7 +11,8 @@ contract('TaskGiver', function(accounts) {
     }).then(function(balance) {
     	assert.equal(0, balance.toNumber());
     	return taskGiver.submitDeposit(accounts[0], {value: 10000});
-    }).then(function(result) {
+    }).then(function(tx) {
+        assert.equal(web3.utils.soliditySha3(accounts[0]), tx.receipt.logs[0].data);
     	return taskGiver.getBalance.call(accounts[0]);
     }).then(function(balance) {
     	assert.equal(10000, balance.toNumber());
