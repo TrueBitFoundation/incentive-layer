@@ -6,7 +6,7 @@ import './Solver.sol';
 contract TaskGiver is AccountManager {
 	uint numTasks = 0;
 	event SendTask(address _from, uint id, uint minDeposit);
-	event SolverSelection(uint indexed taskID);
+	event SolverSelection(uint indexed taskID, address _from);
 
 	mapping(uint => Task) tasks;
 	mapping(uint => mapping(uint => address[])) solutionSignatures;
@@ -42,7 +42,7 @@ contract TaskGiver is AccountManager {
 		//address randomSolver = tasks[id].solvers[randomNum % tasks[id.solvers].length];
 		//Using a mapping allows for multiple solvers to be selected
 		tasks[id].selectedSolvers[tasks[id].solvers[0]] = 1;
-		SolverSelection(id);
+		SolverSelection(id, this);
 	}
 
 	function isSelectedSolver(uint id, address addr) returns (bool) {

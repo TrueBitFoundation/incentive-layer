@@ -31,4 +31,8 @@ contract Solver is AccountManager {
 		tasks[id].challengers.push(from);
 		return true;
 	}
+
+	function wasSelected(address from, address by, uint taskID) returns (bool) {
+		return TaskGiver(by).isSelectedSolver(taskID, from);
+	}
 }
