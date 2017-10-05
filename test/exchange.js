@@ -44,7 +44,7 @@ contract('TrueBit Exchange', function(accounts) {
 	  		resolve();
   		});
   	}).then(function() {
-  		return taskGiver.sendTask(6000, {from: accounts[5]});
+  		return taskGiver.sendTask(6000, accounts[5]);
   	});
   });
 });

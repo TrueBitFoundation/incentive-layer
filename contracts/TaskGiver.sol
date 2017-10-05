@@ -19,13 +19,13 @@ contract TaskGiver is AccountManager {
 		uint[] solutions;
 	}
 
-	function sendTask(uint minDeposit) returns (bool) {
-		require(balances[tx.origin] >= minDeposit);
+	function sendTask(uint minDeposit, address _from) returns (bool) {
+		require(balances[_from] >= minDeposit);
 		Task t;
-		t.owner = tx.origin;
+		t.owner = _from;
 		t.minDeposit = minDeposit;
 		tasks[numTasks] = t;
-		SendTask(tx.origin, numTasks, minDeposit);
+		SendTask(this, numTasks, minDeposit);
 		numTasks++;
 		return true;
 	}
@@ -33,11 +33,13 @@ contract TaskGiver is AccountManager {
 	function receiveBid(uint id, address addr) returns(bool) {
 		Task t = tasks[id];
 		t.solvers.push(addr);
+		log0(bytes32(sha3(addr)));
 		return true;
 	}
 
 	function selectSolver(uint id) returns (address) {
 		//address randomSolver = tasks[id].solvers[randomNum % tasks[id.solvers].length];
+		//Using a mapping allows for multiple solvers to be selected
 		tasks[id].selectedSolvers[tasks[id].solvers[0]] = 1;
 		SolverSelection(id);
 	}

@@ -15,10 +15,12 @@ contract('TaskGiver', function(accounts) {
     	return taskGiver.getBalance.call(accounts[0]);
     }).then(function(balance) {
     	assert.equal(10000, balance.toNumber());
-    	return taskGiver.sendTask(5000, {from: accounts[0]});
+    	return taskGiver.sendTask(5000, accounts[0]);
     }).then(function(tx) {
+        assert.equal(taskGiver.address, tx.logs[0].args._from);
     	return taskGiver.receiveBid(0, accounts[1]);//account[1] sends bid to task0
     }).then(function(tx) {
+        assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
         return taskGiver.selectSolver(0);
     }).then(function(solver) {
         return taskGiver.isSelectedSolver.call(0, accounts[1]);
