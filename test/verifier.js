@@ -21,7 +21,7 @@ contract('Verifier', function(accounts) {
     	return Solver.deployed();
     }).then(function(_solver) {
         solver = _solver;
-        return solver.solveTask(0x0, 0, 1000, {from: accounts[3]});
+        return solver.solveTask(accounts[1], accounts[0], 0x0, 0, 1000);
     }).then(function(tx) {
         return verifier.sendChallenge(accounts[2], solver.address, 0, 0x0, 1000);
     }).then(function(tx) {

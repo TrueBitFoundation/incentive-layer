@@ -36,7 +36,7 @@ contract('Solver', function(accounts) {
     var solver;
     return Solver.deployed().then(function(instance) {
         solver = instance;
-        return solver.solveTask(0x0, 0, 1000);
+        return solver.solveTask(accounts[1], accounts[0], 0x0, 0, 1000);
     }).then(function(tx) {
         return solver.receiveChallenge(0, accounts[3]);
     });

@@ -5,30 +5,23 @@ import './TaskGiver.sol';
 
 contract Solver is AccountManager {
 
-	struct Task {
-		address owner;
-		address[] challengers;
-	}
+	mapping(uint => mapping(address => address)) challenges;
 
-	mapping(uint => Task) tasks;
-
-	event SendSolution(address _from, uint id, bytes32 solution, uint minDeposit);
+	event SendSolution(address solver, address taskGiver, uint id, bytes32 solution, uint minDeposit, bytes32 taskData);
 
 	function sendBid(address origin, uint id, uint minDeposit, address addr) {
 		require(balances[addr] >= minDeposit);
 		require(TaskGiver(origin).receiveBid(id, addr));
 	}
 
-	function solveTask(bytes32 task, uint id, uint minDeposit) returns (bool) {
-		Task t;
-		t.owner = tx.origin;
-		tasks[id] = t;
-		SendSolution(msg.sender, id, 0x0, minDeposit);
+	function solveTask(address solver, address taskGiver, bytes32 taskData, uint id, uint minDeposit) returns (bool) {
+		bytes32 solution = 0x0;
+		SendSolution(solver, taskGiver, id, solution, minDeposit, taskData);
 		return true;
 	}
 
 	function receiveChallenge(uint id, address from) returns (bool) {
-		tasks[id].challengers.push(from);
+		//tasks[id].challengers.push(from);
 		return true;
 	}
 
