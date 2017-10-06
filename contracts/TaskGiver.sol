@@ -4,6 +4,8 @@ import './AccountManager.sol';
 import './Solver.sol';
 
 contract TaskGiver is AccountManager {
+
+	bytes32 random = "123456789";
 	uint numTasks = 0;
 	event SendTask(address _from, uint id, uint minDeposit);
 	event SolverSelection(uint indexed taskID, address _from, uint minDeposit);
@@ -33,13 +35,14 @@ contract TaskGiver is AccountManager {
 	function receiveBid(uint id, address addr) returns(bool) {
 		Task t = tasks[id];
 		require(!(t.owner == 0x0));
+		random = sha3(random, now);
 		t.solvers.push(addr);
 		log0(bytes32(sha3(addr)));
 		return true;
 	}
 
 	function selectSolver(uint id) returns (address) {
-		//address randomSolver = tasks[id].solvers[randomNum % tasks[id.solvers].length];
+		//address randomSolver = tasks[id].solvers[random % tasks[id.solvers].length];
 		//Using a mapping allows for multiple solvers to be selected
 		tasks[id].selectedSolvers[tasks[id].solvers[0]] = 1;
 		SolverSelection(id, this, tasks[id].minDeposit);
