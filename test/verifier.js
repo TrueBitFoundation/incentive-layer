@@ -18,7 +18,10 @@ contract('Verifier', function(accounts) {
     	return verifier.getBalance.call(accounts[2]);
     }).then(function(balance) {
     	assert.equal(10000, balance.toNumber());
-    	return 
+        return Solver.deployed()
+    }).then(function(_solver) {
+        solver = _solver;
+        return verifier.sendChallenge(accounts[2], solver.address, 0, 4600);
     });
   });
 });

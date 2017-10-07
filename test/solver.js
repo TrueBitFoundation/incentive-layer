@@ -30,7 +30,7 @@ contract('Solver', function(accounts) {
         assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
         return solver.submitSolution(accounts[1], 0, "12345", 0x0, "123456");
     }).then(function(tx) {
-        assert.equal(accounts[1], tx.logs[0].args.solver);
+        assert.equal(solver.address, tx.logs[0].args.solver);
         return
     });
   });

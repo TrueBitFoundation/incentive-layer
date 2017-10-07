@@ -27,13 +27,12 @@ contract Solver is AccountManager {
 
 	function submitSolution(address solver, uint taskID, bytes32 randomBits, bytes32 correctSolutionHash, bytes32 incorrectSolutionHash) returns (bool) {
 		Task t = tasks[taskID];
-		solverRandomBits[taskID] = randomBits;
-		//add send correct or incorrect solution here
+		solverRandomBits[taskID] = randomBits;//save for later use
 		uint randomNum = uint(sha3(randomBits, block.blockhash(block.number-1)));
 		if (randomNum % 2 == 0) {
-			SubmitSolution(solver, t.taskGiver, taskID, correctSolutionHash, t.minDeposit, t.taskData);
+			SubmitSolution(this, t.taskGiver, taskID, correctSolutionHash, t.minDeposit, t.taskData);
 		}else{
-			SubmitSolution(solver, t.taskGiver, taskID, incorrectSolutionHash, t.minDeposit, t.taskData);
+			SubmitSolution(this, t.taskGiver, taskID, incorrectSolutionHash, t.minDeposit, t.taskData);
 		}
 		return true;
 	}

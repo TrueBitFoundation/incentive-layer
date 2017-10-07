@@ -9,9 +9,9 @@ contract TaskGiver is AccountManager {
 	uint private numTasks = 0;
 	event SendTask(address _from, uint id, uint minDeposit);
 	event SolveTask(address indexed solver, bytes32 taskData, uint minDeposit);
-	uint maxSolvers = 10;
+	uint private maxSolvers = 10;
 
-	mapping(uint => Task) tasks;
+	mapping(uint => Task) private tasks;
 
 	struct Task {
 		address owner;
@@ -33,6 +33,7 @@ contract TaskGiver is AccountManager {
 	function receiveBid(uint id, address addr) returns(bool) {
 		Task t = tasks[id];
 		require(!(t.owner == 0x0));
+		require(t.numSolvers < maxSolvers);
 		random = sha3(random, block.blockhash(block.number-1));
 		t.solvers[t.numSolvers] = addr;
 		t.numSolvers++;
