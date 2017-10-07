@@ -19,7 +19,7 @@ contract Verifier is AccountManager {
 
 	function sendSolutionHash(address _from, address _to, uint minDeposit, uint taskID, bytes32 solutionHash) returns (bool) {
 		require(balances[_from] >= minDeposit);
-		require(TaskGiver(_to).receiveSolutionHash(_from, taskID, solutionHash));
+		//require(TaskGiver(_to).receiveSolutionHash(_from, taskID, solutionHash));
 		log0(sha3(_from));
 		log0(sha3(_to));		
 		return true;

@@ -18,18 +18,11 @@ contract Solver is AccountManager {
 	mapping(uint => mapping(address => uint)) private challengers;
 
 	//one solver per task
-	event SubmitSolution(address solver, address taskGiver, uint id, bytes32 solution, uint minDeposit, bytes32 taskData);
-	event SolveTask(address indexed solver, bytes32 taskData);
+	event SubmitSolution(address solver, address indexed taskGiver, uint id, bytes32 solution, uint minDeposit, bytes32 taskData);
 
 	function sendBid(address origin, uint id, uint minDeposit, address addr, bytes32 random) {
 		require(balances[addr] >= minDeposit);
 		require(TaskGiver(origin).receiveBid(id, addr));
-	}
-
-	function solveTask(address solver, address taskGiver, bytes32 taskData, uint id, uint minDeposit) returns (bool) {
-		tasks[id] = Task(solver, taskGiver, taskData, id, minDeposit);
-		SolveTask(solver, taskData);
-		return true;
 	}
 
 	function submitSolution(address solver, uint taskID, bytes32 randomBits, bytes32 correctSolutionHash, bytes32 incorrectSolutionHash) returns (bool) {

@@ -18,27 +18,7 @@ contract('Verifier', function(accounts) {
     	return verifier.getBalance.call(accounts[2]);
     }).then(function(balance) {
     	assert.equal(10000, balance.toNumber());
-    	return Solver.deployed();
-    }).then(function(_solver) {
-        solver = _solver;
-        return solver.solveTask(accounts[1], accounts[0], 0x0, 0, 1000);
-    }).then(function(tx) {
-        return verifier.sendChallenge(accounts[2], solver.address, 0, 0x0, 1000);
-    }).then(function(tx) {
-        assert.equal(web3.utils.soliditySha3(accounts[2]), tx.receipt.logs[0].data);
-        assert.equal(web3.utils.soliditySha3(solver.address), tx.receipt.logs[1].data);
-        return TaskGiver.deployed();
-    }).then(function(_taskGiver) {
-        taskGiver = _taskGiver;
-        return taskGiver.submitDeposit(accounts[3], {value: 10000});
-    }).then(function(tx) {
-        return taskGiver.sendTask(4500, accounts[3]);
-    }).then(function(tx) {
-        return verifier.sendSolutionHash(accounts[2], taskGiver.address, 4500, 0, 0x0);
-    }).then(function(tx) {
-        assert.equal(tx.receipt.logs[1].data, tx.receipt.logs[0].data);
-        assert.equal(web3.utils.soliditySha3(taskGiver.address), tx.receipt.logs[2].data);
-        return
+    	return 
     });
   });
 });

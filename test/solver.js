@@ -23,14 +23,15 @@ contract('Solver', function(accounts) {
         taskGiver = _taskGiver;
         return taskGiver.submitDeposit(accounts[0], {value: 10000});
     }).then(function(tx) {
-        return taskGiver.sendTask(4800, address);
+        return taskGiver.sendTask(accounts[0], 4800, 0x0);
     }).then(function(tx) {
     	return solver.sendBid(taskGiver.address, 0, 4800, accounts[1], web3.utils.soliditySha3("12345"));
     }).then(function(tx) {
         assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
-    	return solver.solveTask(accounts[1], accounts[0], 0x0, 0, 4800);
+        return solver.submitSolution(accounts[1], 0, "12345", 0x0, "123456");
     }).then(function(tx) {
         assert.equal(accounts[1], tx.logs[0].args.solver);
+        return
     });
   });
 });

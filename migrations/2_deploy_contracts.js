@@ -8,7 +8,7 @@ module.exports = function(deployer, network, thing) {
   deployer.deploy(Truebit).then(function() {
     return deployer.deploy(ExampleRequester, Truebit.address);
   });
-  deployer.deploy(TaskGiver, {gas: 1000000});
+  deployer.deploy(TaskGiver);
   deployer.deploy(Solver);
   deployer.deploy(Verifier);
 };
