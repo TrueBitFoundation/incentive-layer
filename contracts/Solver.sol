@@ -5,17 +5,17 @@ import './TaskGiver.sol';
 
 contract Solver is AccountManager {
 
-	bytes32 random = "12345678";
+	mapping(address => bytes32) private solverRandomBits;
 
 	//one solver per task
 	mapping(uint => mapping(address => address)) challenges;
 
 	event SendSolution(address solver, address taskGiver, uint id, bytes32 solution, uint minDeposit, bytes32 taskData);
 
-	function sendBid(address origin, uint id, uint minDeposit, address addr) {
+	function sendBid(address origin, uint id, uint minDeposit, address addr, bytes32 random) {
 		require(balances[addr] >= minDeposit);
 		require(TaskGiver(origin).receiveBid(id, addr));
-		random = sha3(random, block.blockhash(block.number-1));
+		solverRandomBits[addr] = random;
 	}
 
 	function solveTask(address solver, address taskGiver, bytes32 taskData, uint id, uint minDeposit) returns (bool) {

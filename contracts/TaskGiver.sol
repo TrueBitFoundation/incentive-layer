@@ -5,7 +5,7 @@ import './Solver.sol';
 
 contract TaskGiver is AccountManager {
 
-	bytes32 random = "123456789";
+	bytes32 private random = "123456789";
 	uint numTasks = 0;
 	event SendTask(address _from, uint id, uint minDeposit);
 	event SolverSelection(uint indexed taskID, address _from, uint minDeposit);

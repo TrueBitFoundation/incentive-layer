@@ -25,20 +25,10 @@ contract('Solver', function(accounts) {
     }).then(function(tx) {
         return taskGiver.sendTask(4800, address);
     }).then(function(tx) {
-    	return solver.sendBid(taskGiver.address, 0, 4800, accounts[1]);
+    	return solver.sendBid(taskGiver.address, 0, 4800, accounts[1], web3.utils.soliditySha3("12345"));
     }).then(function(tx) {
         assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
     	return
-    });
-  });
-
-  it("should solve task and receive challenge", function() {
-    var solver;
-    return Solver.deployed().then(function(instance) {
-        solver = instance;
-        return solver.solveTask(accounts[1], accounts[0], 0x0, 0, 1000);
-    }).then(function(tx) {
-        return solver.receiveChallenge(0, accounts[3]);
     });
   });
 });
