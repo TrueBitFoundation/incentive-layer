@@ -8,7 +8,7 @@ contract TaskGiver is AccountManager {
 	bytes32 private random = "123456789";
 	uint private numTasks = 0;
 	event SendTask(address _from, uint id, uint minDeposit);
-	event SolveTask(address indexed solver, bytes32 taskData, uint minDeposit);
+	event SolveTask(address indexed solver, uint id, bytes32 taskData, uint minDeposit);
 	uint private maxSolvers = 10;
 
 	mapping(uint => Task) private tasks;
@@ -41,10 +41,18 @@ contract TaskGiver is AccountManager {
 		return true;
 	}
 
-	function selectSolver(uint taskID) returns (address) {
+	function selectSolver(uint taskID) returns (bool) {
 		Task t = tasks[taskID];
+		require(msg.sender == t.owner);
 		address randomSolver = t.solvers[uint(random) % t.numSolvers];
 		t.selectedSolver = randomSolver;
-		SolveTask(randomSolver, t.taskData, t.minDeposit);
+		SolveTask(randomSolver, taskID, t.taskData, t.minDeposit);
+		return true;
+	}
+
+	function getTask(uint taskID, address solver) returns (uint, bytes32) {
+		Task t = tasks[taskID];
+		require(t.selectedSolver == solver);
+		return (t.minDeposit, t.taskData);
 	}
 }

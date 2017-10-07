@@ -25,10 +25,12 @@ contract('Solver', function(accounts) {
     }).then(function(tx) {
         return taskGiver.sendTask(accounts[0], 4800, 0x0);
     }).then(function(tx) {
-    	return solver.sendBid(taskGiver.address, 0, 4800, accounts[1], web3.utils.soliditySha3("12345"));
+    	return solver.sendBid(taskGiver.address, 0, 4800, accounts[1]);
     }).then(function(tx) {
         assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
-        return solver.submitSolution(accounts[1], 0, "12345", 0x0, "123456");
+        return taskGiver.selectSolver(0, {from: accounts[0]});
+    }).then(function(tx) {
+        return solver.submitSolution(taskGiver.address, accounts[1], 0, "12345", web3.utils.soliditySha3(0x0), web3.utils.soliditySha3("12345"));
     }).then(function(tx) {
         assert.equal(solver.address, tx.logs[0].args.solver);
         return

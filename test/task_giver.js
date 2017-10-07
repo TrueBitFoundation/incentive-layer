@@ -22,7 +22,7 @@ contract('TaskGiver', function(accounts) {
     	return taskGiver.receiveBid(0, accounts[1]);//account[1] sends bid to task0
     }).then(function(tx) {
         assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
-        return taskGiver.selectSolver(0);
+        return taskGiver.selectSolver(0, {from: accounts[0]});
     }).then(function(tx) {
         assert.equal(accounts[1], tx.logs[0].args.solver);
         return
