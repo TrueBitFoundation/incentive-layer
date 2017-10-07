@@ -5,33 +5,48 @@ import './TaskGiver.sol';
 
 contract Solver is AccountManager {
 
-	mapping(address => bytes32) private solverRandomBits;
+	struct Task {
+		address solver;
+		address taskGiver;
+		bytes32 taskData;
+		uint taskID;
+		uint minDeposit;
+	}
+
+	mapping(uint => Task) private tasks;
+	mapping(uint => bytes32) private solverRandomBits;
+	mapping(uint => mapping(address => uint)) private challengers;
 
 	//one solver per task
-	mapping(uint => mapping(address => address)) challenges;
-
-	event SendSolution(address solver, address taskGiver, uint id, bytes32 solution, uint minDeposit, bytes32 taskData);
+	event SubmitSolution(address solver, address taskGiver, uint id, bytes32 solution, uint minDeposit, bytes32 taskData);
+	event SolveTask(address indexed solver, bytes32 taskData);
 
 	function sendBid(address origin, uint id, uint minDeposit, address addr, bytes32 random) {
 		require(balances[addr] >= minDeposit);
 		require(TaskGiver(origin).receiveBid(id, addr));
-		solverRandomBits[addr] = random;
 	}
 
 	function solveTask(address solver, address taskGiver, bytes32 taskData, uint id, uint minDeposit) returns (bool) {
-		bytes32 solution = 0x0;
+		tasks[id] = Task(solver, taskGiver, taskData, id, minDeposit);
+		SolveTask(solver, taskData);
+		return true;
+	}
+
+	function submitSolution(address solver, uint taskID, bytes32 randomBits, bytes32 correctSolutionHash, bytes32 incorrectSolutionHash) returns (bool) {
+		Task t = tasks[taskID];
+		solverRandomBits[taskID] = randomBits;
 		//add send correct or incorrect solution here
-		//sha3(random, block.blockhash)
-		SendSolution(solver, taskGiver, id, solution, minDeposit, taskData);
+		uint randomNum = uint(sha3(randomBits, block.blockhash(block.number-1)));
+		if (randomNum % 2 == 0) {
+			SubmitSolution(solver, t.taskGiver, taskID, correctSolutionHash, t.minDeposit, t.taskData);
+		}else{
+			SubmitSolution(solver, t.taskGiver, taskID, incorrectSolutionHash, t.minDeposit, t.taskData);
+		}
 		return true;
 	}
 
 	function receiveChallenge(uint id, address from) returns (bool) {
-		//tasks[id].challengers.push(from);
+		challengers[id][from] = 1;
 		return true;
-	}
-
-	function wasSelected(address from, address by, uint taskID) returns (bool) {
-		return TaskGiver(by).isSelectedSolver(taskID, from);
 	}
 }
