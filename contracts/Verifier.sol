@@ -6,6 +6,7 @@ import './TaskGiver.sol';
 
 contract Verifier is AccountManager {
 
+	//many verifiers per task
 	mapping(address => mapping(uint => bytes32)) solutions;
 
 	function sendChallenge(address _from, address _to, uint id, bytes32 solution, uint minDeposit) returns (bool) {
