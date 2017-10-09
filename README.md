@@ -6,12 +6,12 @@ This working sketch follows section 4 of the [whitepaper](https://people.cs.uchi
 
 ## Implementation
 
-There are many ways in which this can be implemented; this first draft assumes a library-driven structure, consisting of three core struct: Jackpot, Task, and TaskBook. 
+There are many ways in which this can be implemented; this first draft assumes a library-driven structure, consisting of three core structs: Jackpot, Task, and TaskBook. 
 
 
 ### Jackpot 
 
-To incentivize verifiers, a [progressive jackpot](https://en.wikipedia.org/wiki/Progressive_jackpot) is established prior to the negotiation of Tasks. The idea here is to collect a verification tax as a fixed fraction of a Task's difficulty, awarding a fixed fraction of its holdings when a 'forced error' is in effect. 
+To incentivize verifiers, a [progressive jackpot](https://en.wikipedia.org/wiki/Progressive_jackpot) is established prior to the negotiation of Tasks. The idea here is to collect a verification tax as a fixed multiple of a Task's difficulty, awarding a fixed fraction of its holdings when a 'forced error' is in effect. 
 
 In order to facilitate multiple methods of payment, the rules and operation of the Jackpot are defined here in terms of arbitrary quantities of type `uint256`. The intention here is
 to enable the construction of Jackpots, and subsequently Tasks, whose payment structure is defined in separate contracts.
