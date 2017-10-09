@@ -1,212 +1,289 @@
-/**
-  *  A sketch of the incentive layer as a library.
-  *
-**/
 pragma solidity ^0.4.17;
 
 library Incentive {
 
+
     /**
-      * State variable capturing the evolving state of a task
-      * for conditional execution of operations.
-     **/
+     *  The state of a Task.
+     * 
+     *      NONE        -   Initial state, awaiting call to `init`.
+     *      BIDDING     -   Accepting bids from solvers.
+     *      SOLVING     -   Waiting for solution from solver.
+     *      PENDING     -   Pending challenge from verifiers.
+     *      RESOLVING   -   Resolving challenge from verifier.
+     *      ACCEPTED    -   Accepted solution.
+     *      EXPIRED     -   Timeout triggers, Task expired.
+    **/
     enum State {
+        NONE,
         BIDDING,
         SOLVING,
         PENDING,
+        RESOLVING,
         ACCEPTED,
-        CHALLENGED,
-        VERIFIED,
-        REJECTED,
-        FAILED
+        TIMEOUT
     }
 
-
-   /**
-      *     A 'Task' encapsulating the features needed to verifiably communicate
-      *     the status of submitted computations.
-      *
-      *         giver            -  The address requesting the Task, supplying values for init, min_deposit,
-      *                             and blk_timeout. 
-      * 
-      * 
-      *         state            -  One of the above States corresponding to the stage of the protocol
-      *                             in which the Task is in. Tasks begin in the 'BIDDING' state, and
-      *                             remain this way until either a solver is elected or a timeout is reached.
-      *
-      *         init            -   Keccak-256 hash of the initial VM state supplied by `giver`. This is used by the solver to
-      *                             initialize an off-chain execution.
-      *
-      *         deposit         -  The amount deposited in escrow for this Task. This does not include the
-      *                             quantity provided as verification tax.
-      * 
-      *         min_deposit     -  The minimum deposit required of prospective solvers.
-      * 
-      *         blk_submit      -  The block number at which this Task was submitted.
-      * 
-      *         blk_timeout     -  The number of blocks in each phase among bidding, solving,
-      *                             and challenging. For the moment, this is
-      *
-      *                                 1) supplied by the task giver, and 
-      *                                 2) uniform across phases.
-      *
-      *                              This will require tuning to achieve optimality, and it
-      *                              may be preferable to select timeout parameters globally.
-      * 
-      *                              Timeouts are measured in blocks, since block timestamps
-      *                              need not correspond to the correct total ordering of blocks,
-      *                              even though they typically do.
-      * 
-      *         solver          -   The address elected to solve the Task. The selection process described
-      *                             in the white paper resolves, from the perspective of a contract in which
-      *                             this Task is found, to the first bidder satisfying the conditions for
-      *                             solving this Task.
-      * 
-      *         solutions        -   The keccak-256 hashes of the terminal VM states supplied by `solver`. These
-      *                              correspond to correct and incorrect solutions, with the choice revealed once
-      *                              the next block is mined and the solver is able to decide.
-      *                          
-      * 
-      *         steps           -   The number of computation steps executed by the solver in obtaining `solution`.
-      *     
-    **/
-  struct Task {
-      State state;        
-
-        address giver;      
-        address solver;
-
-        uint reward;
-        uint deposit;
-        uint min_deposit;
-        
-        
-        bytes32 init;
-        bytes32[2] solutions;
-
-        uint blk_start;
-        uint blk_timeout;
-
-        uint steps;
-  }
-
-
-  /**
-    *  The Jackpot with it's key features
-    *
-    *     balance -
-    *
-    *     rate -
-    *
-  **/
-
-  struct Jackpot {
-      uint  balance;
-      uint  rate;
-      uint  tax;
-      uint  count;
-  }
-
-
-  /**
-   * @dev Creates a task for computation
-   * 
-   * @param init -        keccak-256 hash of initial VM state
-   * @param deposit -     the quantity deposited
-   * @param min_deposit - the minimum deposit to accept from bidders
-  *  @param reward      - the reward for solving the task
-  **/
-  function create (
-        bytes32 init,
-        uint deposit,
-        uint min_deposit,
-        uint reward
-    ) 
-      public returns (Task) {
-        return Task(State.BIDDING,
-                                 msg.sender,
-                                 msg.sender,
-                                 reward,
-                                 deposit,
-                                 min_deposit,
-                                 init,
-                                 0,
-                                 tasks[size].blk_start,
-                                 tasks[size].blk_timeout,
-                                 0);
-
-        size++;
-    }
 
     /**
-      * @dev Places a bid on a given task if the sender meets the requirements for solving.
-      * 
-      * @param id   - the id of the task
+     *   Abstract Jackpot representation.
+     * 
+     *      @param addr         Address of this Jackpot.
+     *      @param tax          Universal tax rate for this Jackpot.
+     *      @param size         Current jackpot pot size.
+     *      @param fe_rate      Forced Error Rate.
+     *      @param active       Declares Jackpot active or inactive.
      **/
-    function bid (Task storage task) 
-        public
-        onlyBidding ()
-        returns (bool success)
-    {
-        Task storage task = self.tasks[id];
-        
-        if (self.solver == 0) {
-          self.solver = msg.sender;
-          self.state = State.SOLVING;
-          self.blk_start = block.number;
-          Elected(task.solver, id);
-        }
+    struct Jackpot {
+        address addr;
+        uint tax;
+        uint size;
+        uint fe_rate;
+        bool active;
+    }
+    
+
+    /**
+      * @dev Initializes a Jackpot
+      * 
+      * @param self         The Jackpot on which this is called.
+      * @param tax          The Jackpot tax rate.
+      * @param fe_rate      The forced error rate.
+      * 
+      * @return success    True on success.
+     **/
+    function init(
+        Jackpot storage self,
+        uint tax,
+        uint fe_rate)
+        onlyInactive (self)
+        public returns (bool) {
+    
+        self.addr = msg.sender;
+        self.tax = tax;
+        self.fe_rate = fe_rate;
+        self.active = true;
         return true;
     }
 
+    
     /**
-      * @dev Submits a pair of solutions to the given task.
-      *
-      * @param self       -  A task 
-      * @param solutions   - The solutions, supplied as hashes of the terminal VM states.
-      * @param steps      - The number of steps run this function's execution.
-  **/
-    function solve (
+      * @dev Deposits a quantity into the Jackpot repository.
+      * 
+      * @param self         The Jackpot on which this is called.
+      * @param amount       The amount deposited.
+      * 
+      * @return size       The resulting size of the pot.
+     **/
+    function deposit (
+        Jackpot storage self,
+        uint amount)
+        onlyActive (self)
+        public returns (uint) {
+
+        self.size += amount;
+        return self.size;
+    }
+
+
+    /**
+     *  Main Task component.
+     * 
+     *  @param state        Current state of Task. See `State` definition above.
+     *  @param jackpot      Jackpot repository with which this Task is associated. This is important when actions are triggered.
+     *  @param giver        Address of Giver.
+     *  @param solver       Address of elected Solver.
+     *  @param init         Keccak256 hash of initial VM state, supplied by Giver.
+     *  @param rand_hash    Keccak256 hash of solver's private random bits r.
+     *  @param soln_hashes  Pair of Keccak256 hashes of solutions commited by solver.
+     *  @param soln         Keccak256 hash of terminal VM state, revealed by solver after challenge timeout.
+     *  @param soln_choice  Choice among pair `soln_hashes` designated by solver after `soln_hashes` are included in a block.
+     *  @param created      Block in which this Task first appears.
+     *  @param elected      Block in which a solver is first elected.
+     *  @param commited     Block in which solver submits solution hashes.
+     *  @param challenged   Block in which challenge is initiated, if at all.
+     *  @param min_deposit  Minimum deposit amount required from solvers.
+     *  @param timeout      Timeout period, in blocks, for bidding, solving, and resolving states.
+     *  @param deposits     Deposits submitted by solver and verifiers.
+    **/
+    struct Task {
+        State state;
+        Jackpot jackpot;
+
+        address giver;
+        address solver;
+
+        bytes32 init;
+        bytes32 rand_hash;
+        bytes32[2] soln_hashes;
+        bytes32 soln;
+
+        bool soln_choice;
+
+        uint created;
+        uint elected;
+        uint commited;
+        uint challenged;
+        uint reward;
+        uint deposit;
+        uint min_deposit;
+        uint timeout;
+        
+        mapping (address => uint) deposits;
+    }
+    
+    /**
+     *  @dev Initializes a Task for bidding.
+     * 
+     *  @param self             The Task on which this function is called.
+     *  @param jackpot          Jackpot repository with which this Task is associated.
+     *  @param init_hash        Keccak256 hash of initial VM state.
+     *  @param reward           Reward offered for solution of this Task.
+     *  @param min_deposit      Minimum deposit amount required from solvers and verifiers.
+     *  @param timeout          Timeout period, in blocks, for bidding, solving, and resolving states.
+     * 
+     *  @return expiry          Block number of bidding timeout. 
+    **/
+    function init (
         Task storage self,
-        bytes32[2] solution,
-        uint steps
+        Jackpot storage jackpot,
+        bytes32 init_hash,
+
+        uint reward,
+        uint min_deposit,
+        uint timeout
+    ) 
+        onlyState (self, State.NONE)            // Task must be uninitialized.
+        onlyActive (jackpot)                    // Jackpot must be active.
+        public returns (uint) {
+        
+        self.giver = msg.sender;
+        self.jackpot = jackpot;
+        self.init = init_hash;
+        self.reward = reward;
+        self.min_deposit = min_deposit;
+        self.created = block.number;
+        self.timeout = timeout;
+        self.state = State.BIDDING;
+        return self.created + self.timeout;
+    }
+    
+
+    /**
+      * @dev Places a bid on this Task, determining the Task's Solver.
+      * 
+      * @param self             The Task on which this is called.
+      * @param amount           The quantity staked for deposit.
+      * @param rand_hash        The Keccak256 hash of private random bits r.
+      * 
+      * @return expiry          The block number at which the solving phase will timeout.
+     **/
+    function bid (
+        Task storage self, 
+        uint amount, 
+        bytes32 rand_hash
     )
-      onlySolving (tasks[id])
-      onlySolver (tasks[id])
-      public returns (uint) {
-        self.solution[0] = solution[0];
-        self.solution[1] = solution[1];
-        self.steps = steps;
+        onlyState (self, State.BIDDING)
+        onlyMinDeposit (self, amount)
+        public returns (uint expiry) {
+        require (self.created + self.timeout > block.number);
+        self.state = State.SOLVING;
+        self.deposit = amount;
+        self.solver = msg.sender;
+        self.rand_hash = rand_hash;
+        return block.number + self.timeout;
+    }
+    
+    /**
+     *  @dev Makes a deposit to this Task, determining verifiers.
+     * 
+     *  @param self         The Task on which this is called.
+     *  @param amount       The quantity deposited.
+     * 
+     *  @return bool        Returns true on success.
+     **/
+    function deposit (
+        Task storage self,
+        uint amount
+    )
+        onlyState (self, State.SOLVING)
+        public returns (bool) {
+    
+        self.deposits[msg.sender] += amount;
+    }
+
+    
+    /**
+     *  @dev Commits solution hashes to this Task.
+     * 
+     *  @param self         The Task on which this is called.
+     *  @param soln_hashes  Keccak256 hashes as defined in `Task`.
+     * 
+     *  @return success     Returns true on success, false on timeout.
+    **/    
+    function commit (
+        Task storage self,
+        bytes32[2] soln_hashes
+    )
+        onlySolver (self)
+        onlyState (self, State.SOLVING)
+        public returns (bool success) {
+        
+        // Timeout, deposit forfeited
+        if (self.elected + self.timeout <= block.number) {
+            self.state = State.TIMEOUT;
+            // todo: handle deposit forfeit to jackpot 
+            return false;
+        }
+
+        self.soln_hashes = soln_hashes;
+        self.commited = block.number;
+        return true;
     }
 
 
+    function reveal (
+      Task storage self,
+      bytes32 soln
+      uint steps
+    ) {
+      // todo 
+    }
 
     
-
-    event Submitted(address indexed giver);
-    event Elected(address indexed solver);
-    event Solved (address indexed solver);
-
-    // Only during the bidding phase of a task.
-    modifier onlyBidding (Task storage task) {
-        require (block.number < task.blk_start + task.blk_timeout);
+    
+    modifier onlyActive (Jackpot storage self) {
+        require (self.active);
         _;
     }
 
-    // Only the solver of the task 
-    modifier onlySolver (Task storage task) {
-      require (task.solver == msg.sender);
-      _;
-    }
-
-
-    // Only during the solving phase of a task
-    modifier onlySolving (Task storage task) {
-        require ((task.state == State.SOLVING) &&
-                (block.number >= task.blk_start + task.blk_timeout) &&
-                (block.number < task.blk_start + 2*task.blk_timeout));
+    modifier onlyInactive (Jackpot storage self) {
+        require (!self.active);
         _;
     }
     
+    
+    modifier onlyVerifier (Task storage self) {
+        require ((self.deposits[msg.sender] >= self.min_deposit) &&
+                 !(self.solver == msg.sender));
+        _;
+    }
+    
+    
+    modifier onlySolver (Task storage self) {
+        require (self.solver == msg.sender);
+        _;
+    }
+
+    modifier onlyMinDeposit (Task storage self, uint amount) {
+        require (self.min_deposit <= amount);
+        _;
+    }
+
+
+    modifier onlyState (Task storage self, State state) {
+        require (self.state == state);
+        _;
+    }
 
 }
