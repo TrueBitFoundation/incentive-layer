@@ -1,71 +1,65 @@
-var TaskGiver = artifacts.require("./TaskGiver.sol");
-var Solver = artifacts.require("./Solver.sol");
-var Verifier = artifacts.require("./Verifier.sol");
+var TaskBook = artifacts.require("./TaskBook.sol");
 var Web3 = require('web3');
 var web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 contract('TrueBit Exchange', function(accounts) {
   it("should simulate the exchange of ether for computation and verification", function() {
-  	var taskGiver, solver, verifier, sendTask, submitSolution, solveTask;
-  	return TaskGiver.deployed().then(function(_taskGiver) {
-  		taskGiver = _taskGiver;
-  		return Solver.deployed();
-  	}).then(function(_solver) {
-  		solver = _solver;
-  		return Verifier.deployed();
-  	}).then(function(_verifier) {
-  		verifier = _verifier;
-  		return taskGiver.submitDeposit(accounts[5], {value: 10000});
+  	var task_book, task_giver, solver, verifier, new_task, submit_solution, solve_task;
+    task_giver = accounts[5];
+    solver = accounts[6];
+    verifier = accounts[7];
+    var minDeposit = 6500;
+  	return TaskBook.deployed().then(function(_task_book) {
+  		task_book = _task_book;
+  		return task_book.submitDeposit({from: task_giver, value: 10000});
   	}).then(function(tx) {
-  		return solver.submitDeposit(accounts[6], {value: 10000});
+  		return task_book.submitDeposit({from: solver, value: 10000});
   	}).then(function(tx) {
-  		return verifier.submitDeposit(accounts[7], {value: 10000});
+  		return task_book.submitDeposit({from: verifier, value: 10000});
   	}).then(function(tx) {
-  		return taskGiver.sendTask(accounts[5], 6000, 0x0);
+  		return task_book.newTask(minDeposit, 0x0, 5, {from: task_giver});
   	}).then(function(tx) {
-  		sendTask = taskGiver.SendTask();
-  		sendTask.watch(function(error, result) {
+      taskID = tx.logs[0].args.taskID.toNumber();
+  		new_task = task_book.NewTask();
+  		new_task.watch(function(error, result) {
   			if(!error) {
-  				var to = result.args._from;
-  				var taskID = result.args.id;
-  				var minDeposit = result.args.minDeposit;
-  				if(minDeposit >= 6000) {//Ignore tasks from other tests
-  					solver.sendBid(to, taskID, minDeposit, accounts[6]);
+          var _taskID = result.args.taskID.toNumber();
+          var _minDeposit = result.args.minDeposit.toNumber();
+          var blockNumber = result.args.blockNumber.toNumber();
+  				if(minDeposit >= 6500) {//Ignore tasks from other tests
+            task_book.registerForTask(_taskID, _minDeposit, {from: solver});
   				}
   			}
   		});
 
-  		solveTask = taskGiver.SolveTask();
-  		solveTask.watch(function(error, result) {
-        var solverAddress = result.args.solver;
-        var taskData = result.args.taskData;
-        var minDeposit = result.args.minDeposit.toNumber();
-        var taskID = result.args.id.toNumber();
+  		solve_task = task_book.SolveTask();
+  		solve_task.watch(function(error, result) {
   			if(!error) {
+          var _taskID = result.args.taskID.toNumber();
+          var solver = result.args.solver;
+          var task_data = result.args.taskData;
           if(minDeposit >= 6000) {//Ignore tasks from other tests
-            solver.submitSolution(taskGiver.address, solverAddress, taskID, "12345", web3.utils.soliditySha3(0x0), web3.utils.soliditySha3("12345"));
+            task_book.submitSolution(_taskID, "12345", web3.utils.soliditySha3(0x0), web3.utils.soliditySha3("12345"), {from: solver});
           }
   			}
   		});
 
-      submitSolution = solver.SubmitSolution();
-      submitSolution.watch(function(error, result) {
+      submit_solution = task_book.SubmitSolution();
+      submit_solution.watch(function(error, result) {
         if(!error) {
-          var solverAddress = result.args.solver;
-          var taskGiverAddress = result.args.taskGiver;
-          var taskID = result.args.id.toNumber();
+          var _taskID = result.args.taskID.toNumber();
           var solution = result.args.solution;
-          var minDeposit = result.args.minDeposit.toNumber();
-          var taskData = result.args.taskData;
+          var _minDeposit = result.args.minDeposit.toNumber();
+          var task_data = result.args.taskData;
           if(minDeposit >= 6000) {
-            verifier.sendChallenge(accounts[7], solverAddress, taskID, minDeposit);
+            task_book.submitChallenge(_taskID, _minDeposit, {from: verifier});
           }
         }
       });
   	}).then(function() {
   			return new Promise(function(resolve) {
   				setTimeout(function() {
-  					resolve(taskGiver.selectSolver(0, {from: accounts[5]}));
+  					resolve(task_book.selectSolver(0, {from: task_giver}));
   				}, 3000);
   			});
   	});

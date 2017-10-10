@@ -7,14 +7,14 @@ contract AccountManager {
     
   }
 
-  function getBalance(address addr) returns (uint) {
-  	return balances[addr];
+  function getBalance() returns (uint) {
+  	return balances[msg.sender];
   }
 
-  function submitDeposit(address addr) payable returns (bool) {
-  	uint balance = balances[addr];
-  	balances[addr] = balance + msg.value;
-    log0(sha3(addr));
+  function submitDeposit() payable returns (bool) {
+  	uint balance = balances[msg.sender];
+  	balances[msg.sender] = balance + msg.value;
+    log0(sha3(msg.sender));
   }
 
 }
