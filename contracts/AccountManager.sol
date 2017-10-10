@@ -8,12 +8,12 @@ contract AccountManager {
   }
 
   function getBalance() returns (uint) {
-  	return balances[msg.sender];
+    return balances[msg.sender];
   }
 
   function submitDeposit() payable returns (bool) {
-  	uint balance = balances[msg.sender];
-  	balances[msg.sender] = balance + msg.value;
+    uint balance = balances[msg.sender];
+    balances[msg.sender] = balance + msg.value;
     log0(sha3(msg.sender));
   }
 

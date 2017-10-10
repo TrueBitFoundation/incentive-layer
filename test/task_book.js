@@ -25,7 +25,7 @@ contract('TaskBook', function(accounts) {
     	assert.equal(web3.utils.soliditySha3(accounts[3]), tx.receipt.logs[0].data);
     	verifier = accounts[3];
     	minDeposit = 5000;
-    	return task_book.newTask(minDeposit, 0x0, 5, {from: task_giver});
+    	return task_book.createTask(minDeposit, 0x0, 5, {from: task_giver});
     }).then(function(tx) {
     	assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
     	taskID = tx.logs[0].args.taskID.toNumber();
@@ -38,7 +38,7 @@ contract('TaskBook', function(accounts) {
     	return task_book.selectSolver(taskID, {from: task_giver});
     }).then(function(tx) {
     	assert.equal(solver, tx.logs[0].args.solver);
-    	return task_book.submitSolution(taskID, "12345", web3.utils.soliditySha3(0x0), web3.utils.soliditySha3("12345"), {from: solver});
+    	return task_book.submitSolution(taskID, web3.utils.soliditySha3("12345"), web3.utils.soliditySha3(0x0), web3.utils.soliditySha3("12345"), {from: solver});
     }).then(function(tx) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());

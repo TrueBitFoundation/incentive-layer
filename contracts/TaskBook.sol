@@ -8,12 +8,12 @@ contract TaskBook is AccountManager {
 	uint constant maxSolvers = 10;
 	uint constant maxChallengers = 10;
 
-	event NewTask(uint taskID, uint minDeposit, uint blockNumber);
-	event SolveTask(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
-	event SubmitSolution(uint taskID, bytes32 solution, uint minDeposit, bytes32 taskData);
+	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
+	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
+	event SolutionSubmitted(uint taskID, bytes32 solution, uint minDeposit, bytes32 taskData);
 
 	mapping(uint => Task) private tasks;
-	mapping(uint => bytes32) private solverRandomBits;
+	mapping(uint => bytes32) private solverRandomBitsHash;
 	mapping(uint => mapping(address => uint)) private challengers;
 
 	struct Task {
@@ -28,11 +28,11 @@ contract TaskBook is AccountManager {
 	}
 
 	//Task Issuers create tasks to be solved
-	function newTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
+	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		tasks[numTasks] = Task(msg.sender, new address[](maxSolvers), 0x0, minDeposit, taskData, 0, new address[](maxSolvers), 0);
+		tasks[numTasks] = Task(msg.sender, new address[](maxSolvers), 0x0, minDeposit, taskData, 0, new address[](maxChallengers), 0);
 		log0(sha3(msg.sender));//possible bug if log is after event
-		NewTask(numTasks, minDeposit, block.number+numBlocks);
+		TaskCreated(numTasks, minDeposit, block.number+numBlocks);
 		numTasks++;
 		return true;
 	}
@@ -58,20 +58,20 @@ contract TaskBook is AccountManager {
 		//address randomSolver = t.solvers[uint(random) % t.numSolvers];
 		address solver = t.solvers[0];
 		t.selectedSolver = solver;
-		SolveTask(taskID, solver, t.taskData, t.minDeposit);
+		SolverSelected(taskID, solver, t.taskData, t.minDeposit);
 		return true;
 	}
 
 	//Selected solver submits a solution to the exchange
-	function submitSolution(uint taskID, bytes32 randomBits, bytes32 correctSolutionHash, bytes32 incorrectSolutionHash) returns (bool) {
+	function submitSolution(uint taskID, bytes32 randomBitsHash, bytes32 correctSolutionHash, bytes32 incorrectSolutionHash) returns (bool) {
 		Task t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
-		solverRandomBits[taskID] = sha3(randomBits);//save for later use
-		uint randomNum = uint(sha3(randomBits, block.blockhash(block.number-1)));
+		solverRandomBitsHash[taskID] = randomBitsHash;//save for later use
+		uint randomNum = uint(sha3(randomBitsHash, block.blockhash(block.number-1)));
 		if (randomNum % 2 == 0) {
-			SubmitSolution(taskID, correctSolutionHash, t.minDeposit, t.taskData);
+			SolutionSubmitted(taskID, correctSolutionHash, t.minDeposit, t.taskData);
 		}else{
-			SubmitSolution(taskID, incorrectSolutionHash, t.minDeposit, t.taskData);
+			SolutionSubmitted(taskID, incorrectSolutionHash, t.minDeposit, t.taskData);
 		}
 		return true;
 	}
@@ -79,7 +79,7 @@ contract TaskBook is AccountManager {
 	//Verifier submits a challenge to the solution provided for a task
 	function submitChallenge(uint taskID, uint minDeposit) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		require(!(solverRandomBits[taskID] == 0x0));
+		require(!(solverRandomBitsHash[taskID] == 0x0));
 		Task t = tasks[taskID];
 		require(t.numChallengers < maxChallengers);
 		t.challengers.push(msg.sender);
