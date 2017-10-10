@@ -26,19 +26,19 @@ contract('TrueBit Exchange', function(accounts) {
           var _taskID = result.args.taskID.toNumber();
           var _minDeposit = result.args.minDeposit.toNumber();
           var blockNumber = result.args.blockNumber.toNumber();
-  				if(minDeposit >= 6500) {//Ignore tasks from other tests
+  				if(minDeposit >= minDeposit) {//Ignore tasks from other tests
             task_book.registerForTask(_taskID, _minDeposit, {from: solver});
   				}
   			}
   		});
 
-  		solve_selected = task_book.SolverSelected();
-  		solve_selected.watch(function(error, result) {
+  		solver_selected = task_book.SolverSelected();
+  		solver_selected.watch(function(error, result) {
   			if(!error) {
           var _taskID = result.args.taskID.toNumber();
-          var solver = result.args.solver;
+          var _solver = result.args.solver;
           var task_data = result.args.taskData;
-          if(minDeposit >= 6000) {//Ignore tasks from other tests
+          if(solver == _solver) {
             task_book.submitSolution(_taskID, web3.utils.soliditySha3("12345"), web3.utils.soliditySha3(0x0), web3.utils.soliditySha3("12345"), {from: solver});
           }
   			}
@@ -48,10 +48,9 @@ contract('TrueBit Exchange', function(accounts) {
       solution_submitted.watch(function(error, result) {
         if(!error) {
           var _taskID = result.args.taskID.toNumber();
-          var solution = result.args.solution;
           var _minDeposit = result.args.minDeposit.toNumber();
           var task_data = result.args.taskData;
-          if(minDeposit >= 6000) {
+          if(_minDeposit >= 6000) {
             task_book.submitChallenge(_taskID, _minDeposit, {from: verifier});
           }
         }
