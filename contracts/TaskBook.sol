@@ -14,7 +14,6 @@ contract TaskBook is AccountManager {
 
 	mapping(uint => Task) private tasks;
 	mapping(uint => bytes32) private solverRandomBitsHash;
-	mapping(uint => mapping(address => uint)) private challengers;
 	mapping(uint => Solution) private solutions;
 
 	struct Task {
