@@ -42,7 +42,7 @@ contract('TaskBook', function(accounts) {
     }).then(function(tx) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());
-    	return task_book.submitChallenge(taskID, minDeposit, solver, {from: verifier});
+    	return task_book.submitChallenge(taskID, minDeposit, solver, web3.utils.soliditySha3(2), {from: verifier});
     }).then(function(tx) {
     	assert.equal(web3.utils.soliditySha3(verifier), tx.receipt.logs[0].data);
     	return

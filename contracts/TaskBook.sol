@@ -15,6 +15,7 @@ contract TaskBook is AccountManager {
 	mapping(uint => Task) private tasks;
 	mapping(address => mapping(uint => bytes32)) private solverRandomBitsHash;
 	mapping(address => mapping(uint => bytes32)) private solutions;
+	mapping(address => mapping(uint => bytes32)) private verifierIntent;
 
 	struct Task {
 		address owner;
@@ -73,11 +74,12 @@ contract TaskBook is AccountManager {
 	}
 
 	//Verifier submits a challenge to the solution provided for a task
-	function submitChallenge(uint taskID, uint minDeposit, address solver) returns (bool) {
+	function submitChallenge(uint taskID, uint minDeposit, address solver, bytes32 intentHash) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
 		require(!(solutions[solver][taskID] == 0x0));
 		Task t = tasks[taskID];
 		require(t.numChallengers < maxChallengers);
+		verifierIntent[msg.sender][taskID] = intentHash;
 		t.challengers.push(msg.sender);
 		log0(sha3(msg.sender));
 		return true;

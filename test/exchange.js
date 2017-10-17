@@ -52,7 +52,7 @@ contract('TrueBit Exchange', function(accounts) {
           var task_data = result.args.taskData;
           var solverAddress = result.args.solver;
           if(_minDeposit >= 6000) {
-            task_book.submitChallenge(_taskID, _minDeposit, solverAddress, {from: verifier});
+            task_book.submitChallenge(_taskID, _minDeposit, solverAddress, web3.utils.soliditySha3(2), {from: verifier});
           }
         }
       });
