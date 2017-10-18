@@ -10,7 +10,7 @@ contract TaskBook is AccountManager {
 
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
-	event SolutionSubmitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
+	event SolutionCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
 
 	mapping(uint => Task) private tasks;
 	mapping(address => mapping(uint => bytes32)) private solverRandomBitsHash;
@@ -65,16 +65,16 @@ contract TaskBook is AccountManager {
 	}
 
 	//Selected solver submits a solution to the exchange
-	function submitSolution(uint taskID, bytes32 solutionHash) returns (bool) {
+	function commitSolution(uint taskID, bytes32 solutionHash) returns (bool) {
 		Task t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
 		solutions[msg.sender][taskID] = solutionHash;
-		SolutionSubmitted(taskID, t.minDeposit, t.taskData, msg.sender);
+		SolutionCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		return true;
 	}
 
 	//Verifier submits a challenge to the solution provided for a task
-	function submitChallenge(uint taskID, uint minDeposit, address solver, bytes32 intentHash) returns (bool) {
+	function commitChallenge(uint taskID, uint minDeposit, address solver, bytes32 intentHash) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
 		require(!(solutions[solver][taskID] == 0x0));
 		Task t = tasks[taskID];

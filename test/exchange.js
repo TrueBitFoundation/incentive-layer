@@ -11,11 +11,11 @@ contract('TrueBit Exchange', function(accounts) {
     var minDeposit = 6500;
   	return TaskBook.deployed().then(function(_task_book) {
   		task_book = _task_book;
-  		return task_book.submitDeposit({from: task_giver, value: 10000});
+  		return task_book.commitDeposit({from: task_giver, value: 10000});
   	}).then(function(tx) {
-  		return task_book.submitDeposit({from: solver, value: 10000});
+  		return task_book.commitDeposit({from: solver, value: 10000});
   	}).then(function(tx) {
-  		return task_book.submitDeposit({from: verifier, value: 10000});
+  		return task_book.commitDeposit({from: verifier, value: 10000});
   	}).then(function(tx) {
   		return task_book.createTask(minDeposit, 0x0, 5, {from: task_giver});
   	}).then(function(tx) {
@@ -39,20 +39,20 @@ contract('TrueBit Exchange', function(accounts) {
           var _solver = result.args.solver;
           var task_data = result.args.taskData;
           if(solver == _solver) {
-            task_book.submitSolution(_taskID, web3.utils.soliditySha3(0x0), {from: solver});
+            task_book.commitSolution(_taskID, web3.utils.soliditySha3(0x0), {from: solver});
           }
   			}
   		});
 
-      solution_submitted = task_book.SolutionSubmitted();
-      solution_submitted.watch(function(error, result) {
+      solution_committed = task_book.SolutionCommitted();
+      solution_committed.watch(function(error, result) {
         if(!error) {
           var _taskID = result.args.taskID.toNumber();
           var _minDeposit = result.args.minDeposit.toNumber();
           var task_data = result.args.taskData;
           var solverAddress = result.args.solver;
           if(_minDeposit >= 6000) {
-            task_book.submitChallenge(_taskID, _minDeposit, solverAddress, web3.utils.soliditySha3(2), {from: verifier});
+            task_book.commitChallenge(_taskID, _minDeposit, solverAddress, web3.utils.soliditySha3(2), {from: verifier});
           }
         }
       });
