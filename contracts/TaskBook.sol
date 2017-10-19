@@ -10,12 +10,12 @@ contract TaskBook is AccountManager {
 
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
-	event SolutionSubmitted(uint taskID, uint minDeposit, bytes32 taskData);
+	event SolutionCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
 
 	mapping(uint => Task) private tasks;
-	mapping(uint => bytes32) private solverRandomBitsHash;
-	mapping(uint => mapping(address => uint)) private challengers;
-	mapping(uint => Solution) private solutions;
+	mapping(address => mapping(uint => bytes32)) private solverRandomBitsHash;
+	mapping(address => mapping(uint => bytes32)) private solutions;
+	mapping(address => mapping(uint => bytes32)) private verifierIntent;
 
 	struct Task {
 		address owner;
@@ -26,12 +26,6 @@ contract TaskBook is AccountManager {
 		uint numSolvers;
 		address[] challengers;
 		uint numChallengers;
-	}
-
-	struct Solution {
-		bytes32 randomBitsHash;
-		bytes32 correctSolutionHash;
-		bytes32 incorrectSolutionHash;
 	}
 
 	//Task Issuers create tasks to be solved
@@ -45,11 +39,12 @@ contract TaskBook is AccountManager {
 	}
 
 	//Solver registers for tasks
-	function registerForTask(uint id, uint minDeposit) returns(bool) {
+	function registerForTask(uint taskID, uint minDeposit, bytes32 randomBitsHash) returns(bool) {
 		require(balances[msg.sender] >= minDeposit);
-		Task t = tasks[id];
+		Task t = tasks[taskID];
 		require(!(t.owner == 0x0));
 		require(t.numSolvers < maxSolvers);
+		solverRandomBitsHash[msg.sender][taskID] = randomBitsHash;
 		//random = sha3(random, block.blockhash(block.number-1));
 		t.solvers[t.numSolvers] = msg.sender;
 		t.numSolvers++;
@@ -70,20 +65,21 @@ contract TaskBook is AccountManager {
 	}
 
 	//Selected solver submits a solution to the exchange
-	function submitSolution(uint taskID, bytes32 randomBitsHash, bytes32 correctSolutionHash, bytes32 incorrectSolutionHash) returns (bool) {
+	function commitSolution(uint taskID, bytes32 solutionHash) returns (bool) {
 		Task t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
-		solutions[taskID] = Solution(randomBitsHash, correctSolutionHash, incorrectSolutionHash);
-		SolutionSubmitted(taskID, t.minDeposit, t.taskData);
+		solutions[msg.sender][taskID] = solutionHash;
+		SolutionCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		return true;
 	}
 
 	//Verifier submits a challenge to the solution provided for a task
-	function submitChallenge(uint taskID, uint minDeposit) returns (bool) {
+	function commitChallenge(uint taskID, uint minDeposit, address solver, bytes32 intentHash) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		require(!(solutions[taskID].randomBitsHash == 0x0));
+		require(!(solutions[solver][taskID] == 0x0));
 		Task t = tasks[taskID];
 		require(t.numChallengers < maxChallengers);
+		verifierIntent[msg.sender][taskID] = intentHash;
 		t.challengers.push(msg.sender);
 		log0(sha3(msg.sender));
 		return true;

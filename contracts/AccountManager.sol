@@ -11,7 +11,7 @@ contract AccountManager {
     return balances[msg.sender];
   }
 
-  function submitDeposit() payable returns (bool) {
+  function commitDeposit() payable returns (bool) {
     uint balance = balances[msg.sender];
     balances[msg.sender] = balance + msg.value;
     log0(sha3(msg.sender));
