@@ -2,15 +2,12 @@ pragma solidity ^0.4.4;
 import "./Requester.sol";
 
 contract Truebit{
-  mapping (uint => Task) tasks;
-  uint numTasks;
-  uint gasPrice = 1000000; //1 million wei/instruction 
 
   struct Task{
-    bytes32 dataRoot;
-    address requester;
-    uint    minDeposit;
-    uint    gasLimit;
+    bytes a;
+    bytes b;
+    uint  minDeposit;
+    uint  gasLimit;
 
     bool solved;
     bool proccessed;

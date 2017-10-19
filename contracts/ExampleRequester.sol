@@ -10,12 +10,12 @@ contract ExampleRequester is Requester{
     truebit = Truebit(_truebit);
   }
 
-  function createTask(bytes32 dataRoot, uint minDeposit) payable returns (uint taskIndex){
-    taskIndex = truebit.createTask.value(msg.value)(dataRoot, minDeposit);
+  function createTask(bytes a, bytes b) payable returns (uint taskIndex){
+    truebit.createTask(dataRoot, minDeposit);
   }
 
-  function proccessTask(uint taskIndex, bytes32 solution) onlyTruebit returns (bool){
-    tasks[taskIndex] = solution;
+  function proccessTask(bytes32 k) onlyTruebit returns (bool){
+    tasks[taskIndex] = k;
     return true;
   }
 }
