@@ -38,7 +38,7 @@ contract('TaskBook', function(accounts) {
     	return task_book.selectSolver(taskID, {from: task_giver});
     }).then(function(tx) {
     	assert.equal(solver, tx.logs[0].args.solver);
-    	return task_book.commitSolution(taskID, web3.utils.soliditySha3(0x0), {from: solver});
+    	return task_book.commitSolution(taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver});
     }).then(function(tx) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());

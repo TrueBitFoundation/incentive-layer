@@ -39,7 +39,7 @@ contract('TrueBit Exchange', function(accounts) {
           var _solver = result.args.solver;
           var task_data = result.args.taskData;
           if(solver == _solver) {
-            task_book.commitSolution(_taskID, web3.utils.soliditySha3(0x0), {from: solver});
+            task_book.commitSolution(_taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver});
           }
   			}
   		});
