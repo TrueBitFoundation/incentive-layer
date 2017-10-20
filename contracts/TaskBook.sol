@@ -12,6 +12,8 @@ contract TaskBook is AccountManager {
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
 	event SolutionCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
+	event TaskStateChange(uint taskID, uint state);
+	event ChallengeCommitted(uint taskID, address challenger, uint challengerID);
 
 	struct Task {
 		address owner;
@@ -20,8 +22,9 @@ contract TaskBook is AccountManager {
 		uint minDeposit;
 		bytes32 taskData;
 		uint numSolvers;
-		address[] challengers;
+		bytes32[] challengers;
 		uint numChallengers;
+		uint state;
 	}
 
 	struct Solution {
@@ -34,15 +37,22 @@ contract TaskBook is AccountManager {
 	mapping(uint => Task) private tasks;
 	mapping(address => mapping(uint => bytes32)) private solverRandomBitsHash;
 	mapping(address => mapping(uint => Solution)) private solutions;
-	mapping(address => mapping(uint => bytes32)) private verifierIntent;
 
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		tasks[numTasks] = Task(msg.sender, new address[](maxSolvers), 0x0, minDeposit, taskData, 0, new address[](maxChallengers), 0);
+		tasks[numTasks] = Task(msg.sender, new address[](maxSolvers), 0x0, minDeposit, taskData, 0, new bytes32[](maxChallengers), 0, 0);
 		log0(sha3(msg.sender));//possible bug if log is after event
 		TaskCreated(numTasks, minDeposit, block.number+numBlocks);
 		numTasks++;
+		return true;
+	}
+
+	function changeTaskState(uint taskID, uint newState) returns (bool) {
+		Task t = tasks[taskID];
+		require(t.owner == msg.sender);
+		t.state = newState;
+		TaskStateChange(taskID, newState);
 		return true;
 	}
 
@@ -51,12 +61,14 @@ contract TaskBook is AccountManager {
 		require(balances[msg.sender] >= minDeposit);
 		Task t = tasks[taskID];
 		require(!(t.owner == 0x0));
+		require(t.state == 0);
 		require(t.numSolvers < maxSolvers);
 		solverRandomBitsHash[msg.sender][taskID] = randomBitsHash;
 		//random = sha3(random, block.blockhash(block.number-1));
 		t.solvers[t.numSolvers] = msg.sender;
 		t.numSolvers++;
 		log0(bytes32(sha3(msg.sender)));
+		log0(randomBitsHash);
 		return true;
 	}
 
@@ -64,10 +76,10 @@ contract TaskBook is AccountManager {
 	function selectSolver(uint taskID) returns (bool) {
 		Task t = tasks[taskID];
 		require(msg.sender == t.owner);
-		//uint random = uint(block.blockhash(block.number-1));
-		//address randomSolver = t.solvers[uint(random) % t.numSolvers];
+		require(t.state == 0);
 		address solver = t.solvers[0];
 		t.selectedSolver = solver;
+		t.state = 1;
 		SolverSelected(taskID, solver, t.taskData, t.minDeposit);
 		return true;
 	}
@@ -76,8 +88,10 @@ contract TaskBook is AccountManager {
 	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
 		Task t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
+		require(t.state == 1);
 		solutions[msg.sender][taskID] = Solution(solutionHash0, solutionHash1, true, true);
 		SolutionCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
+		t.state = 2;
 		return true;
 	}
 
@@ -86,33 +100,28 @@ contract TaskBook is AccountManager {
 		require(balances[msg.sender] >= minDeposit);
 		require(solutions[solver][taskID].committed);
 		Task t = tasks[taskID];
+		require(t.state == 2);
 		require(t.numChallengers < maxChallengers);
-		verifierIntent[msg.sender][taskID] = intentHash;
-		t.challengers.push(msg.sender);
+		t.challengers[t.numChallengers] = intentHash;
 		t.numChallengers++;
-		log0(sha3(msg.sender));
+		ChallengeCommitted(taskID, msg.sender, t.numChallengers-1);
 		return true;
 	}
 
-	function revealSolution(uint taskID, bool solution0, bytes32 originalRandomBits) returns (bool) {
-		require(solverRandomBitsHash[msg.sender][taskID] == sha3(originalRandomBits));
-		solutions[msg.sender][taskID].correct = solution0;
+	function revealIntent(uint taskID, uint challengerID, uint intent) returns (bool) {
+		require(tasks[taskID].challengers[challengerID] == sha3(intent));
+		require(tasks[taskID].state == 3);
+		log0(tasks[taskID].challengers[challengerID]);
+		return true;
+	}
 
-		if(uint(originalRandomBits) < forcedErrorThreshold) {//Forced error
-			//wait for second challenge
-			//if(second challenge) {
-			//	verification game
-			//	return true
-			//}//else
-			//payout verifier with jackpot
-			//return true
-		}else{//No forced error
-			if(tasks[taskID].numChallengers > 0) {
-				//verification game
-			}else{
-				//protocol failed, no verifiers to play game
-			}
-		}
+	function revealSolution(uint taskID, bool solution0, uint originalRandomBits) returns (bool) {
+		require(solverRandomBitsHash[msg.sender][taskID] == sha3(originalRandomBits));
+		require(tasks[taskID].state == 4);
+		require(tasks[taskID].selectedSolver == msg.sender);
+		solutions[msg.sender][taskID].correct = solution0;
+		tasks[taskID].state = 5;
+		log0(sha3(originalRandomBits));
 		return true;
 	}
 }

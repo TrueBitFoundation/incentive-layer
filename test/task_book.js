@@ -6,7 +6,7 @@ contract('TaskBook', function(accounts) {
 
 	//starting with account[1], because web3 uses account[0] by default if address not specified
   it("should assert true", function() {
-    var task_book, task_giver, solver, verifier, taskID, minDeposit;
+    var task_book, task_giver, solver, verifier, taskID, minDeposit, challengerID, intentHash;
     TaskBook.deployed().then(function(_task_book) {
     	task_book = _task_book;
     	return task_book.commitDeposit({from: accounts[1], value: 10000});
@@ -32,7 +32,7 @@ contract('TaskBook', function(accounts) {
     	assert.equal(0, taskID);
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());
     	//TODO: add block number test here
-    	return task_book.registerForTask(tx.logs[0].args.taskID, tx.logs[0].args.minDeposit, web3.utils.soliditySha3("12345"), {from: solver});
+    	return task_book.registerForTask(tx.logs[0].args.taskID, tx.logs[0].args.minDeposit, web3.utils.soliditySha3(12345), {from: solver});
     }).then(function(tx) {
     	assert.equal(web3.utils.soliditySha3(solver), tx.receipt.logs[0].data);
     	return task_book.selectSolver(taskID, {from: task_giver});
@@ -42,10 +42,26 @@ contract('TaskBook', function(accounts) {
     }).then(function(tx) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());
-    	return task_book.commitChallenge(taskID, minDeposit, solver, web3.utils.soliditySha3(2), {from: verifier});
+        intentHash = web3.utils.soliditySha3(2);
+    	return task_book.commitChallenge(taskID, minDeposit, solver, intentHash, {from: verifier});
     }).then(function(tx) {
-    	assert.equal(web3.utils.soliditySha3(verifier), tx.receipt.logs[0].data);
-    	return
+        assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
+        assert.equal(verifier, tx.logs[0].args.challenger);
+        challengerID = tx.logs[0].args.challengerID.toNumber();
+    	return task_book.changeTaskState(taskID, 3, {from: task_giver});
+    }).then(function(tx) {
+        assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
+        assert.equal(3, tx.logs[0].args.state.toNumber());
+        return task_book.revealIntent(taskID, challengerID, 2, {from: verifier});
+    }).then(function(tx) {
+        assert.equal(intentHash, tx.receipt.logs[0].data);
+        return task_book.changeTaskState(taskID, 4, {from: task_giver});
+    }).then(function(tx) {
+        assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
+        assert.equal(4, tx.logs[0].args.state.toNumber());
+        return task_book.revealSolution(taskID, true, 12345, {from: solver});
+    }).then(function(tx) {
+        assert.equal(tx.receipt.logs[0].data, web3.utils.soliditySha3(12345));
     });
   });
 });
