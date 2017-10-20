@@ -17,7 +17,6 @@ contract TaskBook is AccountManager {
 
 	struct Task {
 		address owner;
-		address[] solvers;
 		address selectedSolver;
 		uint minDeposit;
 		bytes32 taskData;
@@ -41,7 +40,7 @@ contract TaskBook is AccountManager {
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		tasks[numTasks] = Task(msg.sender, new address[](maxSolvers), 0x0, minDeposit, taskData, 0, new bytes32[](maxChallengers), 0, 0);
+		tasks[numTasks] = Task(msg.sender, 0x0, minDeposit, taskData, 0, new bytes32[](maxChallengers), 0, 0);
 		log0(sha3(msg.sender));//possible bug if log is after event
 		TaskCreated(numTasks, minDeposit, block.number+numBlocks);
 		numTasks++;
@@ -56,31 +55,18 @@ contract TaskBook is AccountManager {
 		return true;
 	}
 
-	//Solver registers for tasks
+	//Solver registers for tasks, if first to register than automatically selected solver
 	function registerForTask(uint taskID, uint minDeposit, bytes32 randomBitsHash) returns(bool) {
 		require(balances[msg.sender] >= minDeposit);
 		Task t = tasks[taskID];
 		require(!(t.owner == 0x0));
 		require(t.state == 0);
-		require(t.numSolvers < maxSolvers);
+		require(t.selectedSolver == 0x0);
+		t.selectedSolver = msg.sender;
 		solverRandomBitsHash[msg.sender][taskID] = randomBitsHash;
-		//random = sha3(random, block.blockhash(block.number-1));
-		t.solvers[t.numSolvers] = msg.sender;
-		t.numSolvers++;
-		log0(bytes32(sha3(msg.sender)));
-		log0(randomBitsHash);
-		return true;
-	}
-
-	//Task Issuer tells TrueBitExchange to select a solver
-	function selectSolver(uint taskID) returns (bool) {
-		Task t = tasks[taskID];
-		require(msg.sender == t.owner);
-		require(t.state == 0);
-		address solver = t.solvers[0];
-		t.selectedSolver = solver;
 		t.state = 1;
-		SolverSelected(taskID, solver, t.taskData, t.minDeposit);
+		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit);
+		log0(randomBitsHash);
 		return true;
 	}
 

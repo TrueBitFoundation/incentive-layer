@@ -34,10 +34,11 @@ contract('TaskBook', function(accounts) {
     	//TODO: add block number test here
     	return task_book.registerForTask(tx.logs[0].args.taskID, tx.logs[0].args.minDeposit, web3.utils.soliditySha3(12345), {from: solver});
     }).then(function(tx) {
-    	assert.equal(web3.utils.soliditySha3(solver), tx.receipt.logs[0].data);
-    	return task_book.selectSolver(taskID, {from: task_giver});
-    }).then(function(tx) {
-    	assert.equal(solver, tx.logs[0].args.solver);
+        assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
+        assert.equal(solver, tx.logs[0].args.solver);
+        assert.equal(0x0, tx.logs[0].args.taskData);
+        assert.equal(minDeposit, tx.logs[0].args.minDeposit);
+        assert.equal(web3.utils.soliditySha3(12345), tx.receipt.logs[1].data);
     	return task_book.commitSolution(taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver});
     }).then(function(tx) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
@@ -62,6 +63,7 @@ contract('TaskBook', function(accounts) {
         return task_book.revealSolution(taskID, true, 12345, {from: solver});
     }).then(function(tx) {
         assert.equal(tx.receipt.logs[0].data, web3.utils.soliditySha3(12345));
+
     });
   });
 });
