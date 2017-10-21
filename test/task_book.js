@@ -44,7 +44,7 @@ contract('TaskBook', function(accounts) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());
         intentHash = web3.utils.soliditySha3(2);
-    	return task_book.commitChallenge(taskID, minDeposit, solver, intentHash, {from: verifier});
+    	return task_book.commitChallenge(taskID, minDeposit, intentHash, {from: verifier});
     }).then(function(tx) {
         assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
         assert.equal(verifier, tx.logs[0].args.challenger);
@@ -55,7 +55,6 @@ contract('TaskBook', function(accounts) {
         assert.equal(3, tx.logs[0].args.state.toNumber());
         return task_book.revealIntent(taskID, challengerID, 2, {from: verifier});
     }).then(function(tx) {
-        assert.equal(intentHash, tx.receipt.logs[0].data);
         return task_book.changeTaskState(taskID, 4, {from: task_giver});
     }).then(function(tx) {
         assert.equal(taskID, tx.logs[0].args.taskID.toNumber());

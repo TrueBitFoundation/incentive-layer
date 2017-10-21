@@ -32,17 +32,18 @@ contract TaskBook is AccountManager {
 		bytes32 solutionHash0;
 		bytes32 solutionHash1;
 		bool correct;
-		bool committed;
+		address[] solution0Bets;
+		address[] solution1Bets;
 	}
 
 	mapping(uint => Task) private tasks;
 	mapping(address => mapping(uint => bytes32)) private solverRandomBitsHash;
-	mapping(address => mapping(uint => Solution)) private solutions;
+	mapping(uint => Solution) private solutions;
 
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		Task t;
+		Task storage t;
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
 		t.taskData = taskData;
@@ -54,7 +55,7 @@ contract TaskBook is AccountManager {
 	}
 
 	function changeTaskState(uint taskID, uint newState) returns (bool) {
-		Task t = tasks[taskID];
+		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
 		t.state = newState;
 		TaskStateChange(taskID, newState);
@@ -64,7 +65,7 @@ contract TaskBook is AccountManager {
 	//Solver registers for tasks, if first to register than automatically selected solver
 	function registerForTask(uint taskID, uint minDeposit, bytes32 randomBitsHash) returns(bool) {
 		require(balances[msg.sender] >= minDeposit);
-		Task t = tasks[taskID];
+		Task storage t = tasks[taskID];
 		require(!(t.owner == 0x0));
 		require(t.state == 0);
 		require(t.selectedSolver == 0x0);
@@ -78,20 +79,22 @@ contract TaskBook is AccountManager {
 
 	//Selected solver submits a solution to the exchange
 	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
-		Task t = tasks[taskID];
+		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
 		require(t.state == 1);
-		solutions[msg.sender][taskID] = Solution(solutionHash0, solutionHash1, true, true);
+		Solution storage s;
+		s.solutionHash0 = solutionHash0;
+		s.solutionHash1 = solutionHash1;
+		solutions[taskID] = s;
 		SolutionCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		t.state = 2;
 		return true;
 	}
 
 	//Verifier submits a challenge to the solution provided for a task
-	function commitChallenge(uint taskID, uint minDeposit, address solver, bytes32 intentHash) returns (bool) {
+	function commitChallenge(uint taskID, uint minDeposit, bytes32 intentHash) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		require(solutions[solver][taskID].committed);
-		Task t = tasks[taskID];
+		Task storage t = tasks[taskID];
 		require(t.state == 2);
 		t.challenges.push(Challenge(msg.sender, intentHash));
 		ChallengeCommitted(taskID, msg.sender, t.challenges.length-1);
@@ -100,8 +103,14 @@ contract TaskBook is AccountManager {
 
 	function revealIntent(uint taskID, uint challengerID, uint intent) returns (bool) {
 		require(tasks[taskID].challenges[challengerID].intentHash == sha3(intent));
+		require(tasks[taskID].challenges[challengerID].challenger == msg.sender);
 		require(tasks[taskID].state == 3);
-		log0(tasks[taskID].challenges[challengerID].intentHash);
+		if(intent % 2 == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
+			solutions[taskID].solution0Bets.push(msg.sender);
+		}else{
+			solutions[taskID].solution1Bets.push(msg.sender);
+		}
+		delete tasks[taskID].challenges[challengerID];
 		return true;
 	}
 
@@ -109,7 +118,7 @@ contract TaskBook is AccountManager {
 		require(solverRandomBitsHash[msg.sender][taskID] == sha3(originalRandomBits));
 		require(tasks[taskID].state == 4);
 		require(tasks[taskID].selectedSolver == msg.sender);
-		solutions[msg.sender][taskID].correct = solution0;
+		solutions[taskID].correct = solution0;
 		tasks[taskID].state = 5;
 		log0(sha3(originalRandomBits));
 		return true;
