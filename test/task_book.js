@@ -63,7 +63,7 @@ contract('TaskBook', function(accounts) {
         return task_book.revealSolution(taskID, true, 12345, {from: solver});
     }).then(function(tx) {
         assert.equal(tx.receipt.logs[0].data, web3.utils.soliditySha3(12345));
-
+        return
     });
   });
 });

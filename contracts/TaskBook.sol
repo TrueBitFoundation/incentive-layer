@@ -5,15 +5,18 @@ import './AccountManager.sol';
 contract TaskBook is AccountManager {
 
 	uint private numTasks = 0;
-	uint constant maxSolvers = 10;
-	uint constant maxChallengers = 10;
 	uint private forcedErrorThreshold = 42;
 
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
 	event SolutionCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
-	event TaskStateChange(uint taskID, uint state);
 	event ChallengeCommitted(uint taskID, address challenger, uint challengerID);
+	event TaskStateChange(uint taskID, uint state);
+
+	struct Challenge {
+		address challenger;
+		bytes32 intentHash;
+	}
 
 	struct Task {
 		address owner;
@@ -21,8 +24,7 @@ contract TaskBook is AccountManager {
 		uint minDeposit;
 		bytes32 taskData;
 		uint numSolvers;
-		bytes32[] challengers;
-		uint numChallengers;
+		Challenge[] challenges;
 		uint state;
 	}
 
@@ -40,7 +42,11 @@ contract TaskBook is AccountManager {
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		tasks[numTasks] = Task(msg.sender, 0x0, minDeposit, taskData, 0, new bytes32[](maxChallengers), 0, 0);
+		Task t;
+		t.owner = msg.sender;
+		t.minDeposit = minDeposit;
+		t.taskData = taskData;
+		tasks[numTasks] = t;
 		log0(sha3(msg.sender));//possible bug if log is after event
 		TaskCreated(numTasks, minDeposit, block.number+numBlocks);
 		numTasks++;
@@ -87,17 +93,15 @@ contract TaskBook is AccountManager {
 		require(solutions[solver][taskID].committed);
 		Task t = tasks[taskID];
 		require(t.state == 2);
-		require(t.numChallengers < maxChallengers);
-		t.challengers[t.numChallengers] = intentHash;
-		t.numChallengers++;
-		ChallengeCommitted(taskID, msg.sender, t.numChallengers-1);
+		t.challenges.push(Challenge(msg.sender, intentHash));
+		ChallengeCommitted(taskID, msg.sender, t.challenges.length-1);
 		return true;
 	}
 
 	function revealIntent(uint taskID, uint challengerID, uint intent) returns (bool) {
-		require(tasks[taskID].challengers[challengerID] == sha3(intent));
+		require(tasks[taskID].challenges[challengerID].intentHash == sha3(intent));
 		require(tasks[taskID].state == 3);
-		log0(tasks[taskID].challengers[challengerID]);
+		log0(tasks[taskID].challenges[challengerID].intentHash);
 		return true;
 	}
 
