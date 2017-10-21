@@ -38,7 +38,7 @@ contract('TaskBook', function(accounts) {
         assert.equal(solver, tx.logs[0].args.solver);
         assert.equal(0x0, tx.logs[0].args.taskData);
         assert.equal(minDeposit, tx.logs[0].args.minDeposit);
-        assert.equal(web3.utils.soliditySha3(12345), tx.receipt.logs[1].data);
+        assert.equal(web3.utils.soliditySha3(12345), tx.receipt.logs[0].data);
     	return task_book.commitSolution(taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver});
     }).then(function(tx) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
@@ -61,7 +61,8 @@ contract('TaskBook', function(accounts) {
         assert.equal(4, tx.logs[0].args.state.toNumber());
         return task_book.revealSolution(taskID, true, 12345, {from: solver});
     }).then(function(tx) {
-        assert.equal(tx.receipt.logs[0].data, web3.utils.soliditySha3(12345));
+        assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
+        assert.equal(12345, tx.logs[0].args.randomBits.toNumber());
         return
     });
   });

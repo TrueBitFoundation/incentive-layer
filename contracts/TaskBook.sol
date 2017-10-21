@@ -9,7 +9,8 @@ contract TaskBook is AccountManager {
 
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
-	event SolutionCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
+	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
+	event SolutionRevealed(uint taskID, uint randomBits);
 	event ChallengeCommitted(uint taskID, address challenger, uint challengerID);
 	event TaskStateChange(uint taskID, uint state);
 
@@ -31,7 +32,7 @@ contract TaskBook is AccountManager {
 	struct Solution {
 		bytes32 solutionHash0;
 		bytes32 solutionHash1;
-		bool correct;
+		bool solution0Correct;
 		address[] solution0Bets;
 		address[] solution1Bets;
 	}
@@ -72,8 +73,8 @@ contract TaskBook is AccountManager {
 		t.selectedSolver = msg.sender;
 		solverRandomBitsHash[msg.sender][taskID] = randomBitsHash;
 		t.state = 1;
-		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit);
 		log0(randomBitsHash);
+		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit);
 		return true;
 	}
 
@@ -86,8 +87,8 @@ contract TaskBook is AccountManager {
 		s.solutionHash0 = solutionHash0;
 		s.solutionHash1 = solutionHash1;
 		solutions[taskID] = s;
-		SolutionCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		t.state = 2;
+		SolutionsCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		return true;
 	}
 
@@ -114,13 +115,48 @@ contract TaskBook is AccountManager {
 		return true;
 	}
 
-	function revealSolution(uint taskID, bool solution0, uint originalRandomBits) returns (bool) {
+	//4->5
+	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) returns (bool) {
 		require(solverRandomBitsHash[msg.sender][taskID] == sha3(originalRandomBits));
 		require(tasks[taskID].state == 4);
 		require(tasks[taskID].selectedSolver == msg.sender);
-		solutions[taskID].correct = solution0;
+		solutions[taskID].solution0Correct = solution0Correct;
 		tasks[taskID].state = 5;
-		log0(sha3(originalRandomBits));
+		SolutionRevealed(taskID, originalRandomBits);
 		return true;
+	}
+
+	//5->6
+	//This assumes that the verification game will state who gets payed
+	function verifySolution(uint taskID, uint randomBits) returns (bool) {
+		require(tasks[taskID].state == 5);
+		require(tasks[taskID].owner == msg.sender);
+		tasks[taskID].state = 6;
+		if(uint(sha3(randomBits, block.blockhash(block.number))) < forcedErrorThreshold) {//Forced error
+			runVerificationGames(taskID, solutions[taskID].solution0Correct);
+			//jackpot
+		}else{//No forced error
+			runVerificationGames(taskID, solutions[taskID].solution0Correct);
+			//solver is punished or rewarded
+		}
+		return true;
+	}
+
+	function runVerificationGames(uint taskID, bool solution0Correct) {
+		require(tasks[taskID].state == 6);
+		Task storage t = tasks[taskID];
+		if(solution0Correct) {
+			for(uint i = 0; i < solutions[taskID].solution0Bets.length; i++) {
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Bets[i]);
+			}
+		} else {
+			for(uint j = 0; j < solutions[taskID].solution1Bets.length; j++) {
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Bets[j]);
+			}			
+		}
+	}
+
+	function verificationGame(address solver, address challenger) {
+
 	}
 }
