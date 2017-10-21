@@ -33,8 +33,8 @@ contract TaskBook is AccountManager {
 		bytes32 solutionHash0;
 		bytes32 solutionHash1;
 		bool solution0Correct;
-		address[] solution0Bets;
-		address[] solution1Bets;
+		address[] solution0Challengers;
+		address[] solution1Challengers;
 	}
 
 	mapping(uint => Task) private tasks;
@@ -64,6 +64,7 @@ contract TaskBook is AccountManager {
 	}
 
 	//Solver registers for tasks, if first to register than automatically selected solver
+	//0->1
 	function registerForTask(uint taskID, uint minDeposit, bytes32 randomBitsHash) returns(bool) {
 		require(balances[msg.sender] >= minDeposit);
 		Task storage t = tasks[taskID];
@@ -79,6 +80,7 @@ contract TaskBook is AccountManager {
 	}
 
 	//Selected solver submits a solution to the exchange
+	//1->2
 	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
@@ -93,6 +95,7 @@ contract TaskBook is AccountManager {
 	}
 
 	//Verifier submits a challenge to the solution provided for a task
+	//Verifiers can call this until task giver changes state or timeout
 	function commitChallenge(uint taskID, uint minDeposit, bytes32 intentHash) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
 		Task storage t = tasks[taskID];
@@ -102,14 +105,15 @@ contract TaskBook is AccountManager {
 		return true;
 	}
 
+	//Verifiers can call this until task giver changes state or timeout
 	function revealIntent(uint taskID, uint challengerID, uint intent) returns (bool) {
 		require(tasks[taskID].challenges[challengerID].intentHash == sha3(intent));
 		require(tasks[taskID].challenges[challengerID].challenger == msg.sender);
 		require(tasks[taskID].state == 3);
 		if(intent % 2 == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
-			solutions[taskID].solution0Bets.push(msg.sender);
+			solutions[taskID].solution0Challengers.push(msg.sender);
 		}else{
-			solutions[taskID].solution1Bets.push(msg.sender);
+			solutions[taskID].solution1Challengers.push(msg.sender);
 		}
 		delete tasks[taskID].challenges[challengerID];
 		return true;
@@ -127,7 +131,7 @@ contract TaskBook is AccountManager {
 	}
 
 	//5->6
-	//This assumes that the verification game will state who gets payed
+	//This assumes that the verification game will state who gets paid
 	function verifySolution(uint taskID, uint randomBits) returns (bool) {
 		require(tasks[taskID].state == 5);
 		require(tasks[taskID].owner == msg.sender);
@@ -146,12 +150,12 @@ contract TaskBook is AccountManager {
 		require(tasks[taskID].state == 6);
 		Task storage t = tasks[taskID];
 		if(solution0Correct) {
-			for(uint i = 0; i < solutions[taskID].solution0Bets.length; i++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Bets[i]);
+			for(uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i]);
 			}
 		} else {
-			for(uint j = 0; j < solutions[taskID].solution1Bets.length; j++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Bets[j]);
+			for(uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[j]);
 			}			
 		}
 	}
