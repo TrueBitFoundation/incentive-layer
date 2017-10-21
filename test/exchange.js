@@ -4,7 +4,7 @@ var web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 contract('TrueBit Exchange', function(accounts) {
   it("should simulate the exchange of ether for computation and verification", function() {
-  	var task_book, task_giver, solver, verifier, task_created, solution_submitted, solver_selected;
+  	var task_book, task_giver, solver, verifier, task_created, solution_submitted, solver_selected, taskID;
     task_giver = accounts[5];
     solver = accounts[6];
     verifier = accounts[7];
@@ -26,8 +26,8 @@ contract('TrueBit Exchange', function(accounts) {
           var _taskID = result.args.taskID.toNumber();
           var _minDeposit = result.args.minDeposit.toNumber();
           var blockNumber = result.args.blockNumber.toNumber();
-  				if(minDeposit >= minDeposit) {//Ignore tasks from other tests
-            task_book.registerForTask(_taskID, _minDeposit, web3.utils.soliditySha3("12345"), {from: solver});
+  				if(taskID == _taskID) {//Ignore tasks from other tests
+            task_book.registerForTask(_taskID, _minDeposit, web3.utils.soliditySha3(12345), {from: solver});
   				}
   			}
   		});
@@ -38,31 +38,69 @@ contract('TrueBit Exchange', function(accounts) {
           var _taskID = result.args.taskID.toNumber();
           var _solver = result.args.solver;
           var task_data = result.args.taskData;
-          if(solver == _solver) {
+          var minDeposit = result.args.minDeposit.toNumber();
+          if(solver == _solver && taskID == _taskID) {
             task_book.commitSolution(_taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver});
           }
   			}
   		});
 
-      solution_committed = task_book.SolutionCommitted();
-      solution_committed.watch(function(error, result) {
+      solutions_committed = task_book.SolutionsCommitted();
+      solutions_committed.watch(function(error, result) {
         if(!error) {
           var _taskID = result.args.taskID.toNumber();
           var _minDeposit = result.args.minDeposit.toNumber();
           var task_data = result.args.taskData;
           var solverAddress = result.args.solver;
-          if(_minDeposit >= 6000) {
-            task_book.commitChallenge(_taskID, _minDeposit, solverAddress, web3.utils.soliditySha3(2), {from: verifier});
+          if(taskID == _taskID) {
+            task_book.commitChallenge(_taskID, _minDeposit, web3.utils.soliditySha3(2), {from: verifier});
           }
         }
       });
+
+      task_state_change = task_book.TaskStateChange();
+      task_state_change.watch(function(error, result) {
+        if(!error) {
+          var _taskID = result.args.taskID.toNumber();
+          var state = result.args.state.toNumber();
+          if(taskID == _taskID) {
+            if(state == 3) {
+              task_book.revealIntent(taskID, 2, {from: verifier});
+            }
+
+            if(state == 4) {
+              task_book.revealSolution(taskID, true, 12345, {from: solver});
+            }
+          }
+        }
+      });
+
+      solution_revealed = task_book.SolutionRevealed();
+      solution_revealed.watch(function(error, result) {
+        if(!error) {
+          var _taskID = result.args.taskID.toNumber();
+          var randomBits = result.args.randomBits.toNumber();
+          if(taskID == _taskID) {
+            task_book.verifySolution(taskID, 12345, {from: task_giver})
+          }
+        }
+      });
+
   	}).then(function() {
   			return new Promise(function(resolve) {
   				setTimeout(function() {
-  					resolve(task_book.selectSolver(0, {from: task_giver}));
+            //Stop accepting challenges, challengers can reveal their intent
+  					resolve(task_book.changeTaskState(taskID, 3, {from: task_giver}));
   				}, 3000);
   			});
-  	});
+  	}).then(function() {
+        return new Promise(function(resolve) {
+          setTimeout(function() {
+            //Stop accepting challenger's intent, solver can reveal solution now
+            resolve(task_book.changeTaskState(taskID, 4, {from: task_giver}));
+          }, 3000);
+        });
+    });
   });
 });
 

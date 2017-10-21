@@ -11,7 +11,6 @@ contract TaskBook is AccountManager {
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
 	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
 	event SolutionRevealed(uint taskID, uint randomBits);
-	event ChallengeCommitted(uint taskID, address challenger, uint challengerID);
 	event TaskStateChange(uint taskID, uint state);
 
 	struct Challenge {
@@ -25,7 +24,7 @@ contract TaskBook is AccountManager {
 		uint minDeposit;
 		bytes32 taskData;
 		uint numSolvers;
-		Challenge[] challenges;
+		mapping(address => bytes32) challenges;
 		uint state;
 	}
 
@@ -100,22 +99,20 @@ contract TaskBook is AccountManager {
 		require(balances[msg.sender] >= minDeposit);
 		Task storage t = tasks[taskID];
 		require(t.state == 2);
-		t.challenges.push(Challenge(msg.sender, intentHash));
-		ChallengeCommitted(taskID, msg.sender, t.challenges.length-1);
+		t.challenges[msg.sender] = intentHash;
 		return true;
 	}
 
 	//Verifiers can call this until task giver changes state or timeout
-	function revealIntent(uint taskID, uint challengerID, uint intent) returns (bool) {
-		require(tasks[taskID].challenges[challengerID].intentHash == sha3(intent));
-		require(tasks[taskID].challenges[challengerID].challenger == msg.sender);
+	function revealIntent(uint taskID, uint intent) returns (bool) {
+		require(tasks[taskID].challenges[msg.sender] == sha3(intent));
 		require(tasks[taskID].state == 3);
 		if(intent % 2 == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
 			solutions[taskID].solution0Challengers.push(msg.sender);
 		}else{
 			solutions[taskID].solution1Challengers.push(msg.sender);
 		}
-		delete tasks[taskID].challenges[challengerID];
+		delete tasks[taskID].challenges[msg.sender];
 		return true;
 	}
 
@@ -151,16 +148,16 @@ contract TaskBook is AccountManager {
 		Task storage t = tasks[taskID];
 		if(solution0Correct) {
 			for(uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i]);
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData);
 			}
 		} else {
 			for(uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[j]);
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[j], t.taskData);
 			}			
 		}
 	}
 
-	function verificationGame(address solver, address challenger) {
+	function verificationGame(address solver, address challenger, bytes32 taskData) {
 
 	}
 }
