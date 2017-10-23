@@ -23,7 +23,6 @@ contract TaskBook is AccountManager {
 		address selectedSolver;
 		uint minDeposit;
 		bytes32 taskData;
-		uint numSolvers;
 		mapping(address => bytes32) challenges;
 		uint state;
 	}
@@ -153,7 +152,7 @@ contract TaskBook is AccountManager {
 		} else {
 			for(uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
 				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[j], t.taskData);
-			}			
+			}
 		}
 	}
 
