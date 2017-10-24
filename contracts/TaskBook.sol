@@ -13,11 +13,6 @@ contract TaskBook is AccountManager {
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
 
-	struct Challenge {
-		address challenger;
-		bytes32 intentHash;
-	}
-
 	struct Task {
 		address owner;
 		address selectedSolver;
@@ -25,6 +20,8 @@ contract TaskBook is AccountManager {
 		bytes32 taskData;
 		mapping(address => bytes32) challenges;
 		uint state;
+		bytes32 blockhash;
+		bytes32 randomBitsHash;
 	}
 
 	struct Solution {
@@ -36,13 +33,12 @@ contract TaskBook is AccountManager {
 	}
 
 	mapping(uint => Task) private tasks;
-	mapping(address => mapping(uint => bytes32)) private solverRandomBitsHash;
 	mapping(uint => Solution) private solutions;
 
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		Task storage t;
+		Task storage t = tasks[numTasks];
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
 		t.taskData = taskData;
@@ -70,7 +66,8 @@ contract TaskBook is AccountManager {
 		require(t.state == 0);
 		require(t.selectedSolver == 0x0);
 		t.selectedSolver = msg.sender;
-		solverRandomBitsHash[msg.sender][taskID] = randomBitsHash;
+		t.randomBitsHash = randomBitsHash;
+		t.blockhash = block.blockhash(block.number-1);
 		t.state = 1;
 		log0(randomBitsHash);
 		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit);
@@ -83,7 +80,7 @@ contract TaskBook is AccountManager {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
 		require(t.state == 1);
-		Solution storage s;
+		Solution storage s = solutions[taskID];
 		s.solutionHash0 = solutionHash0;
 		s.solutionHash1 = solutionHash1;
 		solutions[taskID] = s;
@@ -117,7 +114,7 @@ contract TaskBook is AccountManager {
 
 	//4->5
 	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) returns (bool) {
-		require(solverRandomBitsHash[msg.sender][taskID] == sha3(originalRandomBits));
+		require(tasks[taskID].randomBitsHash == sha3(originalRandomBits));
 		require(tasks[taskID].state == 4);
 		require(tasks[taskID].selectedSolver == msg.sender);
 		solutions[taskID].solution0Correct = solution0Correct;
@@ -131,32 +128,31 @@ contract TaskBook is AccountManager {
 	function verifySolution(uint taskID, uint randomBits) returns (bool) {
 		require(tasks[taskID].state == 5);
 		require(tasks[taskID].owner == msg.sender);
+		require(sha3(randomBits) == tasks[taskID].randomBitsHash);
 		tasks[taskID].state = 6;
-		if(uint(sha3(randomBits, block.blockhash(block.number))) < forcedErrorThreshold) {//Forced error
-			runVerificationGames(taskID, solutions[taskID].solution0Correct);
+		if(uint(sha3(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
 			//jackpot
-		}else{//No forced error
-			runVerificationGames(taskID, solutions[taskID].solution0Correct);
-			//solver is punished or rewarded
 		}
+		runVerificationGames(taskID);
 		return true;
 	}
 
-	function runVerificationGames(uint taskID, bool solution0Correct) {
+	function runVerificationGames(uint taskID) {
 		require(tasks[taskID].state == 6);
 		Task storage t = tasks[taskID];
-		if(solution0Correct) {
+		Solution storage s = solutions[taskID];
+		if(s.solution0Correct) {
 			for(uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData);
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData, s.solutionHash0);
 			}
 		} else {
 			for(uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[j], t.taskData);
+				verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[j], t.taskData, s.solutionHash1);
 			}
 		}
 	}
 
-	function verificationGame(address solver, address challenger, bytes32 taskData) {
+	function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) {
 
 	}
 }
