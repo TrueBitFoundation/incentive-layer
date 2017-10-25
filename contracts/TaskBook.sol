@@ -13,13 +13,15 @@ contract TaskBook is AccountManager {
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
 
+	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame}
+
 	struct Task {
 		address owner;
 		address selectedSolver;
 		uint minDeposit;
 		bytes32 taskData;
 		mapping(address => bytes32) challenges;
-		uint state;
+		State state;
 		bytes32 blockhash;
 		bytes32 randomBitsHash;
 	}
@@ -52,7 +54,7 @@ contract TaskBook is AccountManager {
 	function changeTaskState(uint taskID, uint newState) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
-		t.state = newState;
+		t.state = State(newState);
 		TaskStateChange(taskID, newState);
 		return true;
 	}
@@ -63,12 +65,12 @@ contract TaskBook is AccountManager {
 		Task storage t = tasks[taskID];
 		require(balances[msg.sender] >= t.minDeposit);
 		require(!(t.owner == 0x0));
-		require(t.state == 0);
+		require(t.state == State.TaskInitialized);
 		require(t.selectedSolver == 0x0);
 		t.selectedSolver = msg.sender;
 		t.randomBitsHash = randomBitsHash;
 		t.blockhash = block.blockhash(block.number-1);
-		t.state = 1;
+		t.state = State.SolverSelected;
 		log0(randomBitsHash);
 		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit);
 		return true;
@@ -79,12 +81,12 @@ contract TaskBook is AccountManager {
 	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
-		require(t.state == 1);
+		require(t.state == State.SolverSelected);
 		Solution storage s = solutions[taskID];
 		s.solutionHash0 = solutionHash0;
 		s.solutionHash1 = solutionHash1;
 		solutions[taskID] = s;
-		t.state = 2;
+		t.state = State.SolutionComitted;
 		SolutionsCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		return true;
 	}
@@ -94,7 +96,7 @@ contract TaskBook is AccountManager {
 	function commitChallenge(uint taskID, bytes32 intentHash) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(balances[msg.sender] >= t.minDeposit);
-		require(t.state == 2);
+		require(t.state == State.SolutionComitted);
 		t.challenges[msg.sender] = intentHash;
 		return true;
 	}
@@ -102,7 +104,7 @@ contract TaskBook is AccountManager {
 	//Verifiers can call this until task giver changes state or timeout
 	function revealIntent(uint taskID, uint intent) returns (bool) {
 		require(tasks[taskID].challenges[msg.sender] == sha3(intent));
-		require(tasks[taskID].state == 3);
+		require(tasks[taskID].state == State.ChallengesAccepted);
 		if(intent % 2 == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
 			solutions[taskID].solution0Challengers.push(msg.sender);
 		}else{
@@ -115,10 +117,10 @@ contract TaskBook is AccountManager {
 	//4->5
 	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) returns (bool) {
 		require(tasks[taskID].randomBitsHash == sha3(originalRandomBits));
-		require(tasks[taskID].state == 4);
+		require(tasks[taskID].state == State.IntentsRevealed);
 		require(tasks[taskID].selectedSolver == msg.sender);
 		solutions[taskID].solution0Correct = solution0Correct;
-		tasks[taskID].state = 5;
+		tasks[taskID].state = State.SolutionRevealed;
 		SolutionRevealed(taskID, originalRandomBits);
 		return true;
 	}
@@ -126,10 +128,10 @@ contract TaskBook is AccountManager {
 	//5->6
 	//This assumes that the verification game will state who gets paid
 	function verifySolution(uint taskID, uint randomBits) returns (bool) {
-		require(tasks[taskID].state == 5);
+		require(tasks[taskID].state == State.SolutionRevealed);
 		require(tasks[taskID].owner == msg.sender);
 		require(sha3(randomBits) == tasks[taskID].randomBitsHash);
-		tasks[taskID].state = 6;
+		tasks[taskID].state = State.VerificationGame;
 		if(uint(sha3(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
 			//jackpot
 		}
@@ -138,7 +140,7 @@ contract TaskBook is AccountManager {
 	}
 
 	function runVerificationGames(uint taskID) {
-		require(tasks[taskID].state == 6);
+		require(tasks[taskID].state == State.VerificationGame);
 		Task storage t = tasks[taskID];
 		Solution storage s = solutions[taskID];
 		if(s.solution0Correct) {
