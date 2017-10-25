@@ -33,7 +33,7 @@ contract('TaskBook', function(accounts) {
     	assert.equal(0, taskID);
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());
     	//TODO: add block number test here
-    	return task_book.registerForTask(tx.logs[0].args.taskID, tx.logs[0].args.minDeposit, web3.utils.soliditySha3(12345), {from: solver});
+    	return task_book.registerForTask(tx.logs[0].args.taskID, web3.utils.soliditySha3(12345), {from: solver});
     }).then(function(tx) {
         //State 1 Solver Selected
         assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
@@ -47,7 +47,7 @@ contract('TaskBook', function(accounts) {
     	assert.equal(taskID, tx.logs[0].args.taskID.toNumber());
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());
         intentHash = web3.utils.soliditySha3(2);
-    	return task_book.commitChallenge(taskID, minDeposit, intentHash, {from: verifier});
+    	return task_book.commitChallenge(taskID, intentHash, {from: verifier});
     }).then(function(tx) {
     	return task_book.changeTaskState(taskID, 3, {from: task_giver});
     }).then(function(tx) {

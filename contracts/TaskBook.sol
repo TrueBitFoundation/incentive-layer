@@ -59,9 +59,9 @@ contract TaskBook is AccountManager {
 
 	//Solver registers for tasks, if first to register than automatically selected solver
 	//0->1
-	function registerForTask(uint taskID, uint minDeposit, bytes32 randomBitsHash) returns(bool) {
-		require(balances[msg.sender] >= minDeposit);
+	function registerForTask(uint taskID, bytes32 randomBitsHash) returns(bool) {
 		Task storage t = tasks[taskID];
+		require(balances[msg.sender] >= t.minDeposit);
 		require(!(t.owner == 0x0));
 		require(t.state == 0);
 		require(t.selectedSolver == 0x0);
@@ -91,9 +91,9 @@ contract TaskBook is AccountManager {
 
 	//Verifier submits a challenge to the solution provided for a task
 	//Verifiers can call this until task giver changes state or timeout
-	function commitChallenge(uint taskID, uint minDeposit, bytes32 intentHash) returns (bool) {
-		require(balances[msg.sender] >= minDeposit);
+	function commitChallenge(uint taskID, bytes32 intentHash) returns (bool) {
 		Task storage t = tasks[taskID];
+		require(balances[msg.sender] >= t.minDeposit);
 		require(t.state == 2);
 		t.challenges[msg.sender] = intentHash;
 		return true;

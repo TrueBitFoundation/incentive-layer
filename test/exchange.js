@@ -27,7 +27,7 @@ contract('TrueBit Exchange', function(accounts) {
           var _minDeposit = result.args.minDeposit.toNumber();
           var blockNumber = result.args.blockNumber.toNumber();
   				if(taskID == _taskID) {//Ignore tasks from other tests
-            task_book.registerForTask(_taskID, _minDeposit, web3.utils.soliditySha3(12345), {from: solver});
+            task_book.registerForTask(_taskID, web3.utils.soliditySha3(12345), {from: solver});
   				}
   			}
   		});
@@ -53,7 +53,7 @@ contract('TrueBit Exchange', function(accounts) {
           var task_data = result.args.taskData;
           var solverAddress = result.args.solver;
           if(taskID == _taskID) {
-            task_book.commitChallenge(_taskID, _minDeposit, web3.utils.soliditySha3(2), {from: verifier});
+            task_book.commitChallenge(_taskID, web3.utils.soliditySha3(2), {from: verifier});
           }
         }
       });
