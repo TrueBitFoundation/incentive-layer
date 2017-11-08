@@ -1,8 +1,8 @@
 pragma solidity ^0.4.4;
 
-import './AccountManager.sol';
+import './DepositsManager.sol';
 
-contract TaskBook is AccountManager {
+contract TaskBook is DepositsManager {
 
 	uint private numTasks = 0;
 	uint private forcedErrorThreshold = 42;
@@ -39,7 +39,7 @@ contract TaskBook is AccountManager {
 
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
-		require(balances[msg.sender] >= minDeposit);
+		require(deposits[msg.sender] >= minDeposit);
 		Task storage t = tasks[numTasks];
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
@@ -63,7 +63,7 @@ contract TaskBook is AccountManager {
 	//0->1
 	function registerForTask(uint taskID, bytes32 randomBitsHash) returns(bool) {
 		Task storage t = tasks[taskID];
-		require(balances[msg.sender] >= t.minDeposit);
+		require(deposits[msg.sender] >= t.minDeposit);
 		require(!(t.owner == 0x0));
 		require(t.state == State.TaskInitialized);
 		require(t.selectedSolver == 0x0);
@@ -95,7 +95,7 @@ contract TaskBook is AccountManager {
 	//Verifiers can call this until task giver changes state or timeout
 	function commitChallenge(uint taskID, bytes32 intentHash) returns (bool) {
 		Task storage t = tasks[taskID];
-		require(balances[msg.sender] >= t.minDeposit);
+		require(deposits[msg.sender] >= t.minDeposit);
 		require(t.state == State.SolutionComitted);
 		t.challenges[msg.sender] = intentHash;
 		return true;
