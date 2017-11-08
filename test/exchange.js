@@ -17,7 +17,7 @@ contract('TrueBit Exchange', function(accounts) {
   	}).then(function(tx) {
   		return task_book.commitDeposit({from: verifier, value: 10000});
   	}).then(function(tx) {
-  		return task_book.createTask(minDeposit, 0x0, 5, {from: task_giver});
+  		return task_book.createTask(minDeposit, 0x0, 5, 5, 5, 5, {from: task_giver});
   	}).then(function(tx) {
       taskID = tx.logs[0].args.taskID;
   		task_created = task_book.TaskCreated();
@@ -28,6 +28,14 @@ contract('TrueBit Exchange', function(accounts) {
           var blockNumber = result.args.blockNumber.toNumber();
   				if(taskID == _taskID) {//Ignore tasks from other tests
             task_book.registerForTask(_taskID, web3.utils.soliditySha3(12345), {from: solver});
+
+            // try {
+            //    task_book.triggerTaskSolveTimeout(_taskID, {from: task_giver});
+            // }
+            // catch (e) {
+            //    // statements to handle any exceptions
+            //    console.log(e); // pass exception object to error handler
+            // }
   				}
   			}
   		});

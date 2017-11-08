@@ -26,7 +26,7 @@ contract('TaskBook', function(accounts) {
     	verifier = accounts[3];
     	minDeposit = 5000;
         taskData = 0x0;
-    	return task_book.createTask(minDeposit, 0x0, 5, {from: task_giver});
+    	return task_book.createTask(minDeposit, taskData, 5, 5, 5, 5, {from: task_giver});
     }).then(function(tx) {
         //State 0 Task Initialized
     	assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);

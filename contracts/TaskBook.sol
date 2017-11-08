@@ -24,6 +24,7 @@ contract TaskBook is AccountManager {
 		State state;
 		bytes32 blockhash;
 		bytes32 randomBitsHash;
+		Timeouts timeouts;
 	}
 
 	struct Solution {
@@ -34,22 +35,66 @@ contract TaskBook is AccountManager {
 		address[] solution1Challengers;
 	}
 
+	struct Timeouts {
+		uint taskQueueStartBlockNumber;
+		uint taskQueueTimeout;
+		uint taskSolveStartBlockNumber;
+		uint taskSolveTimeout;
+		uint taskChallengeQueueStartBlockNumber;
+		uint taskChallengeQueueTimeout;
+		uint challengeIntentQueueStartBlockNumber;
+		uint challengeIntentQueueTimeout;
+	}
+
 	mapping(bytes32 => Task) private tasks;
 	mapping(bytes32 => Solution) private solutions;
 
 	//Task Issuers create tasks to be solved
-	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
+	function createTask(uint minDeposit, bytes32 taskData, uint taskQueueTimeout, uint taskSolveTimeout, uint taskChallengeQueueTimeout, uint challengeIntentQueueTimeout) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
 		bytes32 taskHash = sha3(msg.sender, minDeposit, taskData);
 		Task storage t = tasks[taskHash];
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
 		t.taskData = taskData;
+		t.timeouts.taskQueueStartBlockNumber = block.number;
+		t.timeouts.taskQueueTimeout = taskQueueTimeout;
+		t.timeouts.taskSolveTimeout = taskSolveTimeout;
 		log0(sha3(msg.sender));//possible bug if log is after event
-		TaskCreated(taskHash, minDeposit, block.number+numBlocks);
+		TaskCreated(taskHash, minDeposit, taskSolveTimeout);
 		return true;
 	}
 
+	function triggerTaskQueueTimeout(bytes32 taskID) returns (bool) {
+		require(msg.sender == tasks[taskID].owner);
+		require(block.number >= tasks[taskID].timeouts.taskQueueTimeout + tasks[taskID].timeouts.taskQueueStartBlockNumber);
+		delete tasks[taskID];
+		return true;
+	}
+
+	function triggerTaskSolveTimeout(bytes32 taskID) returns (bool) {
+		require(msg.sender == tasks[taskID].owner);
+		require(block.number >= tasks[taskID].timeouts.taskSolveTimeout + tasks[taskID].timeouts.taskSolveStartBlockNumber);
+		//take deposit from solver
+		return true;	
+	}
+
+	function triggerTaskChallengeQueueTimeout(bytes32 taskID) returns (bool) {
+		require(msg.sender == tasks[taskID].owner);
+		require(block.number >= tasks[taskID].timeouts.taskChallengeQueueTimeout + tasks[taskID].timeouts.taskChallengeQueueStartBlockNumber);
+		tasks[taskID].state = State.ChallengesAccepted;
+		tasks[taskID].timeouts.challengeIntentQueueStartBlockNumber = block.number;
+		return true;
+	}
+
+	function triggerChallengeIntentQueueTimeout(bytes32 taskID) returns (bool) {
+		require(msg.sender == tasks[taskID].owner);
+		require(block.number >= tasks[taskID].timeouts.challengeIntentQueueTimeout + tasks[taskID].timeouts.challengeIntentQueueStartBlockNumber);
+		tasks[taskID].state = State.IntentsRevealed;
+		return true;
+	}
+
+	//This will eventually be replaced by timeouts above
 	function changeTaskState(bytes32 taskID, uint newState) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
@@ -69,6 +114,7 @@ contract TaskBook is AccountManager {
 		t.selectedSolver = msg.sender;
 		t.randomBitsHash = randomBitsHash;
 		t.blockhash = block.blockhash(block.number-1);
+		t.timeouts.taskSolveStartBlockNumber = block.number;
 		t.state = State.SolverSelected;
 		log0(randomBitsHash);
 		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit);
@@ -86,6 +132,7 @@ contract TaskBook is AccountManager {
 		s.solutionHash1 = solutionHash1;
 		solutions[taskID] = s;
 		t.state = State.SolutionComitted;
+		t.timeouts.taskChallengeQueueStartBlockNumber = block.number;
 		SolutionsCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		return true;
 	}
