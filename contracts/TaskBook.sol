@@ -7,11 +7,11 @@ contract TaskBook is AccountManager {
 	uint private numTasks = 0;
 	uint private forcedErrorThreshold = 42;
 
-	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
-	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
-	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
-	event SolutionRevealed(uint taskID, uint randomBits);
-	event TaskStateChange(uint taskID, uint state);
+	event TaskCreated(bytes32 taskID, uint minDeposit, uint blockNumber);
+	event SolverSelected(bytes32 indexed taskID, address solver, bytes32 taskData, uint minDeposit);
+	event SolutionsCommitted(bytes32 taskID, uint minDeposit, bytes32 taskData, address solver);
+	event SolutionRevealed(bytes32 taskID, uint randomBits);
+	event TaskStateChange(bytes32 taskID, uint state);
 
 	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame}
 
@@ -34,24 +34,23 @@ contract TaskBook is AccountManager {
 		address[] solution1Challengers;
 	}
 
-	mapping(uint => Task) private tasks;
-	mapping(uint => Solution) private solutions;
+	mapping(bytes32 => Task) private tasks;
+	mapping(bytes32 => Solution) private solutions;
 
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
-		Task storage t = tasks[numTasks];
+		bytes32 taskHash = sha3(msg.sender, minDeposit, taskData);
+		Task storage t = tasks[taskHash];
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
 		t.taskData = taskData;
-		tasks[numTasks] = t;
 		log0(sha3(msg.sender));//possible bug if log is after event
-		TaskCreated(numTasks, minDeposit, block.number+numBlocks);
-		numTasks++;
+		TaskCreated(taskHash, minDeposit, block.number+numBlocks);
 		return true;
 	}
 
-	function changeTaskState(uint taskID, uint newState) returns (bool) {
+	function changeTaskState(bytes32 taskID, uint newState) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
 		t.state = State(newState);
@@ -61,7 +60,7 @@ contract TaskBook is AccountManager {
 
 	//Solver registers for tasks, if first to register than automatically selected solver
 	//0->1
-	function registerForTask(uint taskID, bytes32 randomBitsHash) returns(bool) {
+	function registerForTask(bytes32 taskID, bytes32 randomBitsHash) returns(bool) {
 		Task storage t = tasks[taskID];
 		require(balances[msg.sender] >= t.minDeposit);
 		require(!(t.owner == 0x0));
@@ -78,7 +77,7 @@ contract TaskBook is AccountManager {
 
 	//Selected solver submits a solution to the exchange
 	//1->2
-	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
+	function commitSolution(bytes32 taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
 		require(t.state == State.SolverSelected);
@@ -93,7 +92,7 @@ contract TaskBook is AccountManager {
 
 	//Verifier submits a challenge to the solution provided for a task
 	//Verifiers can call this until task giver changes state or timeout
-	function commitChallenge(uint taskID, bytes32 intentHash) returns (bool) {
+	function commitChallenge(bytes32 taskID, bytes32 intentHash) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(balances[msg.sender] >= t.minDeposit);
 		require(t.state == State.SolutionComitted);
@@ -102,7 +101,7 @@ contract TaskBook is AccountManager {
 	}
 
 	//Verifiers can call this until task giver changes state or timeout
-	function revealIntent(uint taskID, uint intent) returns (bool) {
+	function revealIntent(bytes32 taskID, uint intent) returns (bool) {
 		require(tasks[taskID].challenges[msg.sender] == sha3(intent));
 		require(tasks[taskID].state == State.ChallengesAccepted);
 		if(intent % 2 == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
@@ -115,7 +114,7 @@ contract TaskBook is AccountManager {
 	}
 
 	//4->5
-	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) returns (bool) {
+	function revealSolution(bytes32 taskID, bool solution0Correct, uint originalRandomBits) returns (bool) {
 		require(tasks[taskID].randomBitsHash == sha3(originalRandomBits));
 		require(tasks[taskID].state == State.IntentsRevealed);
 		require(tasks[taskID].selectedSolver == msg.sender);
@@ -127,7 +126,7 @@ contract TaskBook is AccountManager {
 
 	//5->6
 	//This assumes that the verification game will state who gets paid
-	function verifySolution(uint taskID, uint randomBits) returns (bool) {
+	function verifySolution(bytes32 taskID, uint randomBits) returns (bool) {
 		require(tasks[taskID].state == State.SolutionRevealed);
 		require(tasks[taskID].owner == msg.sender);
 		require(sha3(randomBits) == tasks[taskID].randomBitsHash);
@@ -139,7 +138,7 @@ contract TaskBook is AccountManager {
 		return true;
 	}
 
-	function runVerificationGames(uint taskID) {
+	function runVerificationGames(bytes32 taskID) {
 		require(tasks[taskID].state == State.VerificationGame);
 		Task storage t = tasks[taskID];
 		Solution storage s = solutions[taskID];

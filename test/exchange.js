@@ -19,11 +19,11 @@ contract('TrueBit Exchange', function(accounts) {
   	}).then(function(tx) {
   		return task_book.createTask(minDeposit, 0x0, 5, {from: task_giver});
   	}).then(function(tx) {
-      taskID = tx.logs[0].args.taskID.toNumber();
+      taskID = tx.logs[0].args.taskID;
   		task_created = task_book.TaskCreated();
   		task_created.watch(function(error, result) {
   			if(!error) {
-          var _taskID = result.args.taskID.toNumber();
+          var _taskID = result.args.taskID;
           var _minDeposit = result.args.minDeposit.toNumber();
           var blockNumber = result.args.blockNumber.toNumber();
   				if(taskID == _taskID) {//Ignore tasks from other tests
@@ -35,7 +35,7 @@ contract('TrueBit Exchange', function(accounts) {
   		solver_selected = task_book.SolverSelected();
   		solver_selected.watch(function(error, result) {
   			if(!error) {
-          var _taskID = result.args.taskID.toNumber();
+          var _taskID = result.args.taskID;
           var _solver = result.args.solver;
           var task_data = result.args.taskData;
           var minDeposit = result.args.minDeposit.toNumber();
@@ -48,7 +48,7 @@ contract('TrueBit Exchange', function(accounts) {
       solutions_committed = task_book.SolutionsCommitted();
       solutions_committed.watch(function(error, result) {
         if(!error) {
-          var _taskID = result.args.taskID.toNumber();
+          var _taskID = result.args.taskID;
           var _minDeposit = result.args.minDeposit.toNumber();
           var task_data = result.args.taskData;
           var solverAddress = result.args.solver;
@@ -61,7 +61,7 @@ contract('TrueBit Exchange', function(accounts) {
       task_state_change = task_book.TaskStateChange();
       task_state_change.watch(function(error, result) {
         if(!error) {
-          var _taskID = result.args.taskID.toNumber();
+          var _taskID = result.args.taskID;
           var state = result.args.state.toNumber();
           if(taskID == _taskID) {
             if(state == 3) {
@@ -78,10 +78,10 @@ contract('TrueBit Exchange', function(accounts) {
       solution_revealed = task_book.SolutionRevealed();
       solution_revealed.watch(function(error, result) {
         if(!error) {
-          var _taskID = result.args.taskID.toNumber();
+          var _taskID = result.args.taskID;
           var randomBits = result.args.randomBits.toNumber();
           if(taskID == _taskID) {
-            task_book.verifySolution(taskID, 12345, {from: task_giver})
+            task_book.verifySolution(taskID, 12345, {from: task_giver});
           }
         }
       });
