@@ -44,8 +44,8 @@ contract TaskBook is DepositsManager {
     Task storage task = tasks[taskID];
 
     require(deposits[msg.sender] >= amount);
-    deposits[account] -= amount;
-    task.bondedDeposits[account] += amount;
+    deposits[account] = deposits[account].sub(amount);
+    task.bondedDeposits[account] = task.bondedDeposits[account].add(amount);
     DepositBonded(taskID, account, amount);
 
     return task.bondedDeposits[account];
@@ -56,7 +56,7 @@ contract TaskBook is DepositsManager {
 
     uint bondedDeposit = task.bondedDeposits[account];
     delete task.bondedDeposits[account];
-    deposits[account] += bondedDeposit;
+    deposits[account] = deposits[account].add(bondedDeposit);
     DepositUnbonded(taskID, account, bondedDeposit);
     
     return bondedDeposit;
@@ -77,8 +77,8 @@ contract TaskBook is DepositsManager {
 		tasks[numTasks] = t;
     bondDeposit(numTasks, msg.sender, minDeposit);
 
-		TaskCreated(numTasks, minDeposit, block.number+numBlocks);
-		numTasks++;
+		TaskCreated(numTasks, minDeposit, block.number.add(numBlocks));
+		numTasks = numTasks.add(1);
 		return true;
 	}
 
@@ -102,7 +102,7 @@ contract TaskBook is DepositsManager {
     bondDeposit(taskID, msg.sender, t.minDeposit);
 		t.selectedSolver = msg.sender;
 		t.randomBitsHash = randomBitsHash;
-		t.blockhash = block.blockhash(block.number-1);
+		t.blockhash = block.blockhash(block.number.add(1));
 		t.state = State.SolverSelected;
 
 		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit, t.randomBitsHash);	

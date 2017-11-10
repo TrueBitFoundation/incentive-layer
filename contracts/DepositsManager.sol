@@ -1,6 +1,9 @@
 pragma solidity ^0.4.4;
 
+import './math/SafeMath.sol';
+
 contract DepositsManager {
+  using SafeMath for uint;
 
   mapping(address => uint) public deposits;
   uint public jackpot;
@@ -29,7 +32,7 @@ contract DepositsManager {
   }
 
   function makeDeposit() public payable returns (uint) {
-    deposits[msg.sender] += msg.value; // TODO: use SafeMath.
+    deposits[msg.sender] = deposits[msg.sender].add(msg.value);
     DepositMade(msg.sender, msg.value);
     return deposits[msg.sender];
   }
@@ -37,7 +40,7 @@ contract DepositsManager {
   function withdrawDeposit(uint amount) public returns (uint) {
     require(deposits[msg.sender] > amount);
 
-    deposits[msg.sender] -= amount; // TODO: use SafeMath.
+    deposits[msg.sender] = deposits[msg.sender].sub(amount);
     msg.sender.transfer(amount);
 
     DepositWithdrawn(msg.sender, amount);
@@ -45,7 +48,7 @@ contract DepositsManager {
   }
 
   function donateToJackpot() public payable returns (uint) {
-    jackpot += msg.value;
+    jackpot = jackpot.add(msg.value);
     JackpotIncreased(msg.value);
     return jackpot;
   }
