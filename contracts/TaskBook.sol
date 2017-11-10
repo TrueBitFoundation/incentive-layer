@@ -13,7 +13,7 @@ contract TaskBook is AccountManager {
 	event SolutionRevealed(bytes32 taskID, uint randomBits);
 	event TaskStateChange(bytes32 taskID, uint state);
 
-	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame}
+	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame }
 
 	struct Task {
 		address owner;
