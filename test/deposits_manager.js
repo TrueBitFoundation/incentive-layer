@@ -25,7 +25,13 @@ contract('TaskBook', function(accounts) {
 
   describe('makeDeposit', () => {
     it('should make a deposit', async () => {
-      await depositsManager.makeDeposit({from: accounts[1], value: 1000});
+      let tx;
+
+      tx = await depositsManager.makeDeposit({from: accounts[1], value: 1000});
+      log = tx.logs.find(log => log.event === 'DepositMade')
+      assert.equal(log.args.who, accounts[1]);
+      assert.equal(log.args.amount, 1000);
+
       const deposit = await depositsManager.getDeposit.call(accounts[1]);
       assert.equal(deposit.toNumber(), 1000);
     });
@@ -41,7 +47,11 @@ contract('TaskBook', function(accounts) {
       assert.equal(deposit.toNumber(), 1000);
 
       // withdraw part of the deposit
-      await depositsManager.withdrawDeposit(500, {from: accounts[1]});
+      const tx = await depositsManager.withdrawDeposit(500, {from: accounts[1]});
+      log = tx.logs.find(log => log.event === 'DepositWithdrawn')
+      assert.equal(log.args.who, accounts[1]);
+      assert.equal(log.args.amount.toNumber(), 500);
+      
       deposit = await depositsManager.getDeposit.call(accounts[1]);
       assert.equal(deposit.toNumber(), 500);
     });
@@ -69,7 +79,10 @@ contract('TaskBook', function(accounts) {
   
   describe('donateToJackpot', () => {
     it('should donate to the jackpot', async () => {
-      await depositsManager.donateToJackpot({from: accounts[1], value: 1000});
+      const tx = await depositsManager.donateToJackpot({from: accounts[1], value: 1000});
+      log = tx.logs.find(log => log.event === 'JackpotIncreased')
+      assert.equal(log.args.amount.toNumber(), 1000);
+
       const jackpot = await depositsManager.getJackpot.call();
       assert.equal(jackpot.toNumber(), 1000);
     });
