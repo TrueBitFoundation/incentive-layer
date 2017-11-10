@@ -7,7 +7,7 @@ contract TaskBook is AccountManager {
 	uint private numTasks = 0;
 	uint private forcedErrorThreshold = 42;
 
-	event TaskCreated(bytes32 taskID, uint minDeposit, uint blockNumber);
+	event TaskCreated(bytes32 taskID, uint minDeposit, uint blockNumber, uint reward);
 	event SolverSelected(bytes32 indexed taskID, address solver, bytes32 taskData, uint minDeposit);
 	event SolutionsCommitted(bytes32 taskID, uint minDeposit, bytes32 taskData, address solver);
 	event SolutionRevealed(bytes32 taskID, uint randomBits);
@@ -19,6 +19,7 @@ contract TaskBook is AccountManager {
 		address owner;
 		address selectedSolver;
 		uint minDeposit;
+		uint reward;
 		bytes32 taskData;
 		mapping(address => bytes32) challenges;
 		State state;
@@ -50,18 +51,19 @@ contract TaskBook is AccountManager {
 	mapping(bytes32 => Solution) private solutions;
 
 	//Task Issuers create tasks to be solved
-	function createTask(uint minDeposit, bytes32 taskData, uint taskQueueTimeout, uint taskSolveTimeout, uint taskChallengeQueueTimeout, uint challengeIntentQueueTimeout) returns (bool) {
+	function createTask(uint minDeposit, uint reward, bytes32 taskData, uint taskQueueTimeout, uint taskSolveTimeout, uint taskChallengeQueueTimeout, uint challengeIntentQueueTimeout) returns (bool) {
 		require(balances[msg.sender] >= minDeposit);
 		bytes32 taskHash = sha3(msg.sender, minDeposit, taskData);
 		Task storage t = tasks[taskHash];
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
+		t.reward = reward;
 		t.taskData = taskData;
 		t.timeouts.taskQueueStartBlockNumber = block.number;
 		t.timeouts.taskQueueTimeout = taskQueueTimeout;
 		t.timeouts.taskSolveTimeout = taskSolveTimeout;
 		log0(sha3(msg.sender));//possible bug if log is after event
-		TaskCreated(taskHash, minDeposit, taskSolveTimeout);
+		TaskCreated(taskHash, minDeposit, taskSolveTimeout, reward);
 		return true;
 	}
 

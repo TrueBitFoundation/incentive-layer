@@ -9,6 +9,7 @@ contract('TrueBit Exchange', function(accounts) {
     solver = accounts[6];
     verifier = accounts[7];
     var minDeposit = 6500;
+    var reward = 6500;
   	return TaskBook.deployed().then(function(_task_book) {
   		task_book = _task_book;
   		return task_book.commitDeposit({from: task_giver, value: 10000});
@@ -17,7 +18,7 @@ contract('TrueBit Exchange', function(accounts) {
   	}).then(function(tx) {
   		return task_book.commitDeposit({from: verifier, value: 10000});
   	}).then(function(tx) {
-  		return task_book.createTask(minDeposit, 0x0, 5, 5, 5, 5, {from: task_giver});
+  		return task_book.createTask(minDeposit, reward, 0x0, 5, 5, 5, 5, {from: task_giver});
   	}).then(function(tx) {
       taskID = tx.logs[0].args.taskID;
   		task_created = task_book.TaskCreated();

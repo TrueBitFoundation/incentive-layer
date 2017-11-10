@@ -25,14 +25,16 @@ contract('TaskBook', function(accounts) {
     	assert.equal(web3.utils.soliditySha3(accounts[3]), tx.receipt.logs[0].data);
     	verifier = accounts[3];
     	minDeposit = 5000;
+        reward = 5000;
         taskData = 0x0;
-    	return task_book.createTask(minDeposit, taskData, 5, 5, 5, 5, {from: task_giver});
+    	return task_book.createTask(minDeposit, reward, taskData, 5, 5, 5, 5, {from: task_giver});
     }).then(function(tx) {
         //State 0 Task Initialized
     	assert.equal(web3.utils.soliditySha3(accounts[1]), tx.receipt.logs[0].data);
     	taskID = tx.logs[0].args.taskID;
     	assert.equal(web3.utils.soliditySha3(accounts[1], minDeposit, taskData), taskID);
     	assert.equal(minDeposit, tx.logs[0].args.minDeposit.toNumber());
+        assert.equal(reward, tx.logs[0].args.reward.toNumber());
     	//TODO: add block number test here
     	return task_book.registerForTask(tx.logs[0].args.taskID, web3.utils.soliditySha3(12345), {from: solver});
     }).then(function(tx) {
