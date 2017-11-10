@@ -7,8 +7,10 @@ contract TaskBook is DepositsManager {
 	uint private numTasks = 0;
 	uint private forcedErrorThreshold = 42;
 
+  event DepositBonded(uint taskID, address account, uint amount);
+  event DepositUnbonded(uint taskID, address account, uint amount);
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
-	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit);
+	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit, bytes32 randomBitsHash);
 	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
@@ -24,6 +26,7 @@ contract TaskBook is DepositsManager {
 		State state;
 		bytes32 blockhash;
 		bytes32 randomBitsHash;
+    mapping(address => uint) bondedDeposits;
 	}
 
 	struct Solution {
@@ -37,15 +40,43 @@ contract TaskBook is DepositsManager {
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
+  function bondDeposit(uint taskID, address account, uint amount) private returns (uint) { 
+    Task storage task = tasks[taskID];
+
+    require(deposits[msg.sender] >= amount);
+    deposits[account] -= amount;
+    task.bondedDeposits[account] += amount;
+    DepositBonded(taskID, account, amount);
+
+    return task.bondedDeposits[account];
+  }
+
+  function unbondDeposit(uint taskID, address account) private returns (uint) {
+    Task storage task = tasks[taskID];
+
+    uint bondedDeposit = task.bondedDeposits[account];
+    delete task.bondedDeposits[account];
+    deposits[account] += bondedDeposit;
+    DepositUnbonded(taskID, account, bondedDeposit);
+    
+    return bondedDeposit;
+  }
+
+  function getBondedDeposit(uint taskID, address account) constant public returns (uint) {
+    return tasks[taskID].bondedDeposits[account];
+  }
+
 	//Task Issuers create tasks to be solved
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(deposits[msg.sender] >= minDeposit);
+
 		Task storage t = tasks[numTasks];
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
 		t.taskData = taskData;
 		tasks[numTasks] = t;
-		log0(sha3(msg.sender));//possible bug if log is after event
+    bondDeposit(numTasks, msg.sender, minDeposit);
+
 		TaskCreated(numTasks, minDeposit, block.number+numBlocks);
 		numTasks++;
 		return true;
@@ -63,17 +94,19 @@ contract TaskBook is DepositsManager {
 	//0->1
 	function registerForTask(uint taskID, bytes32 randomBitsHash) returns(bool) {
 		Task storage t = tasks[taskID];
-		require(deposits[msg.sender] >= t.minDeposit);
+		
 		require(!(t.owner == 0x0));
 		require(t.state == State.TaskInitialized);
 		require(t.selectedSolver == 0x0);
+    
+    bondDeposit(taskID, msg.sender, t.minDeposit);
 		t.selectedSolver = msg.sender;
 		t.randomBitsHash = randomBitsHash;
 		t.blockhash = block.blockhash(block.number-1);
 		t.state = State.SolverSelected;
-		log0(randomBitsHash);
-		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit);
-		return true;
+
+		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit, t.randomBitsHash);	
+    return true;
 	}
 
 	//Selected solver submits a solution to the exchange
@@ -95,7 +128,9 @@ contract TaskBook is DepositsManager {
 	//Verifiers can call this until task giver changes state or timeout
 	function commitChallenge(uint taskID, bytes32 intentHash) returns (bool) {
 		Task storage t = tasks[taskID];
-		require(deposits[msg.sender] >= t.minDeposit);
+    
+    bondDeposit(taskID, msg.sender, t.minDeposit);
+
 		require(t.state == State.SolutionComitted);
 		t.challenges[msg.sender] = intentHash;
 		return true;
