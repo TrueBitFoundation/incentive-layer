@@ -40,6 +40,11 @@ contract TaskBook is DepositsManager {
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
+  // @dev – locks up part of the a user's deposit into a task.
+  // @param taskID – the task id.
+  // @param account – the user's address.
+  // @param amount – the amount of deposit to lock up. 
+  // @return – the user's deposit bonded for the task.
   function bondDeposit(uint taskID, address account, uint amount) private returns (uint) { 
     Task storage task = tasks[taskID];
 
@@ -51,6 +56,10 @@ contract TaskBook is DepositsManager {
     return task.bondedDeposits[account];
   }
 
+  // @dev – unlocks a user's bonded deposits from a task.
+  // @param taskID – the task id.
+  // @param account – the user's address.
+  // @return – the user's deposit which was unbonded from the task.
   function unbondDeposit(uint taskID, address account) private returns (uint) {
     Task storage task = tasks[taskID];
 
@@ -62,11 +71,19 @@ contract TaskBook is DepositsManager {
     return bondedDeposit;
   }
 
+  // @dev – returns the user's bonded deposits for a task.
+  // @param taskID – the task id.
+  // @param account – the user's address.
+  // @return – the uer's bonded deposits for a task.
   function getBondedDeposit(uint taskID, address account) constant public returns (uint) {
     return tasks[taskID].bondedDeposits[account];
   }
 
-	//Task Issuers create tasks to be solved
+	// @dev – taskGiver creates tasks to be solved.
+  // @param minDeposit – the minimum deposit required for engaging with a task as a solver or verifier.
+  // @param taskData – tbd. could be hash of the wasm file on a filesystem.
+  // @param numBlocks – ?
+  // @return – ?
 	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
 		require(deposits[msg.sender] >= minDeposit);
 
@@ -82,6 +99,10 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
+  // @dev – changes a tasks state.
+  // @param taskID – the task id.
+  // @param newSate – the new state.
+  // @return – ?
 	function changeTaskState(uint taskID, uint newState) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
@@ -90,8 +111,11 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-	//Solver registers for tasks, if first to register than automatically selected solver
-	//0->1
+	// @dev – solver registers for tasks, if first to register than automatically selected solver
+	//  0 -> 1
+  // @param taskID – the task id.
+  // @param randomBitsHash – ?
+  // @return – ?
 	function registerForTask(uint taskID, bytes32 randomBitsHash) returns(bool) {
 		Task storage t = tasks[taskID];
 		
@@ -109,8 +133,12 @@ contract TaskBook is DepositsManager {
     return true;
 	}
 
-	//Selected solver submits a solution to the exchange
-	//1->2
+	// @dev – selected solver submits a solution to the exchange
+	// 1->2
+  // @param taskID – the task id.
+  // @param solutionHash0 – ?
+  // @param solutionHash1 – ?
+  // @return – ?
 	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
@@ -124,8 +152,11 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-	//Verifier submits a challenge to the solution provided for a task
-	//Verifiers can call this until task giver changes state or timeout
+	// @dev – verifier submits a challenge to the solution provided for a task
+	// verifiers can call this until task giver changes state or timeout
+  // @param taskID – the task id.
+  // @param intentHash – ?
+  // @return – ?
 	function commitChallenge(uint taskID, bytes32 intentHash) returns (bool) {
 		Task storage t = tasks[taskID];
     
@@ -136,7 +167,10 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-	//Verifiers can call this until task giver changes state or timeout
+	// @dev – verifiers can call this until task giver changes state or timeout
+  // @param taskID – the task id.
+  // @param intent – ?
+  // @return – ?
 	function revealIntent(uint taskID, uint intent) returns (bool) {
 		require(tasks[taskID].challenges[msg.sender] == sha3(intent));
 		require(tasks[taskID].state == State.ChallengesAccepted);
@@ -149,7 +183,12 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-	//4->5
+	// @dev – ?
+  // 4->5
+  // @param taskID – the task id.
+  // @param solution0Correct – ?
+  // @param originalRandomBits – ?
+  // @return – ?
 	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) returns (bool) {
 		require(tasks[taskID].randomBitsHash == sha3(originalRandomBits));
 		require(tasks[taskID].state == State.IntentsRevealed);
@@ -160,8 +199,11 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-	//5->6
-	//This assumes that the verification game will state who gets paid
+	// @dev – 5->6
+	// this assumes that the verification game will state who gets paid
+  // @param taskID – the task id.
+  // @param randomBits – ?
+  // @return – ?
 	function verifySolution(uint taskID, uint randomBits) returns (bool) {
 		require(tasks[taskID].state == State.SolutionRevealed);
 		require(tasks[taskID].owner == msg.sender);
@@ -174,22 +216,25 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
+  // @dev – ?
+  // @param – ?
+  // @return – ?
 	function runVerificationGames(uint taskID) {
 		require(tasks[taskID].state == State.VerificationGame);
-		Task storage t = tasks[taskID];
+		// Task storage t = tasks[taskID];
 		Solution storage s = solutions[taskID];
 		if(s.solution0Correct) {
 			for(uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData, s.solutionHash0);
+				// verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData, s.solutionHash0);
+        break;
 			}
 		} else {
 			for(uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[j], t.taskData, s.solutionHash1);
+				// verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[j], t.taskData, s.solutionHash1);
+        break;
 			}
 		}
 	}
 
-	function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) {
-
-	}
+	// function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash);
 }
