@@ -9,6 +9,7 @@ contract TaskBook is DepositsManager {
 
   event DepositBonded(uint taskID, address account, uint amount);
   event DepositUnbonded(uint taskID, address account, uint amount);
+  event BondedDepositMovedToJackpot(uint taskID, address account, uint amount);
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber);
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit, bytes32 randomBitsHash);
 	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
@@ -67,6 +68,21 @@ contract TaskBook is DepositsManager {
     delete task.bondedDeposits[account];
     deposits[account] = deposits[account].add(bondedDeposit);
     DepositUnbonded(taskID, account, bondedDeposit);
+    
+    return bondedDeposit;
+  }
+
+  // @dev – punishes a user by moving their bonded deposits for a task into the jackpot.
+  // @param taskID – the task id.
+  // @param account – the user's address.
+  // @return – the updated jackpot amount.
+  function moveBondedDepositToJackpot(uint taskID, address account) private returns (uint) { 
+    Task storage task = tasks[taskID];
+
+    uint bondedDeposit = task.bondedDeposits[account];
+    delete task.bondedDeposits[account];
+    jackpot = jackpot.add(bondedDeposit);
+    BondedDepositMovedToJackpot(taskID, account, bondedDeposit);
     
     return bondedDeposit;
   }
