@@ -14,7 +14,7 @@ contract DepositsManager {
   event JackpotIncreased(uint amount);
 
   // @dev – the constructor
-  function DepositsManager() {
+  function DepositsManager() public {
     owner = msg.sender;
     jackpot = 0;
   }

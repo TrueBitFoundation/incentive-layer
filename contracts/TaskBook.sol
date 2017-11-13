@@ -100,7 +100,7 @@ contract TaskBook is DepositsManager {
   // @param taskData – tbd. could be hash of the wasm file on a filesystem.
   // @param numBlocks – ?
   // @return – ?
-	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) returns (bool) {
+	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) public returns (bool) {
 		require(deposits[msg.sender] >= minDeposit);
 
 		Task storage t = tasks[numTasks];
@@ -119,7 +119,7 @@ contract TaskBook is DepositsManager {
   // @param taskID – the task id.
   // @param newSate – the new state.
   // @return – ?
-	function changeTaskState(uint taskID, uint newState) returns (bool) {
+	function changeTaskState(uint taskID, uint newState) public returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
 		t.state = State(newState);
@@ -132,7 +132,7 @@ contract TaskBook is DepositsManager {
   // @param taskID – the task id.
   // @param randomBitsHash – ?
   // @return – ?
-	function registerForTask(uint taskID, bytes32 randomBitsHash) returns(bool) {
+	function registerForTask(uint taskID, bytes32 randomBitsHash) public returns(bool) {
 		Task storage t = tasks[taskID];
 		
 		require(!(t.owner == 0x0));
@@ -155,7 +155,7 @@ contract TaskBook is DepositsManager {
   // @param solutionHash0 – ?
   // @param solutionHash1 – ?
   // @return – ?
-	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) returns (bool) {
+	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) public returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
 		require(t.state == State.SolverSelected);
@@ -173,7 +173,7 @@ contract TaskBook is DepositsManager {
   // @param taskID – the task id.
   // @param intentHash – ?
   // @return – ?
-	function commitChallenge(uint taskID, bytes32 intentHash) returns (bool) {
+	function commitChallenge(uint taskID, bytes32 intentHash) public returns (bool) {
 		Task storage t = tasks[taskID];
     
     bondDeposit(taskID, msg.sender, t.minDeposit);
@@ -187,8 +187,8 @@ contract TaskBook is DepositsManager {
   // @param taskID – the task id.
   // @param intent – ?
   // @return – ?
-	function revealIntent(uint taskID, uint intent) returns (bool) {
-		require(tasks[taskID].challenges[msg.sender] == sha3(intent));
+	function revealIntent(uint taskID, uint intent) public returns (bool) {
+		require(tasks[taskID].challenges[msg.sender] == keccak256(intent));
 		require(tasks[taskID].state == State.ChallengesAccepted);
 		if(intent % 2 == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
 			solutions[taskID].solution0Challengers.push(msg.sender);
@@ -205,8 +205,8 @@ contract TaskBook is DepositsManager {
   // @param solution0Correct – ?
   // @param originalRandomBits – ?
   // @return – ?
-	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) returns (bool) {
-		require(tasks[taskID].randomBitsHash == sha3(originalRandomBits));
+	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) public returns (bool) {
+		require(tasks[taskID].randomBitsHash == keccak256(originalRandomBits));
 		require(tasks[taskID].state == State.IntentsRevealed);
 		require(tasks[taskID].selectedSolver == msg.sender);
 		solutions[taskID].solution0Correct = solution0Correct;
@@ -220,12 +220,12 @@ contract TaskBook is DepositsManager {
   // @param taskID – the task id.
   // @param randomBits – ?
   // @return – ?
-	function verifySolution(uint taskID, uint randomBits) returns (bool) {
+	function verifySolution(uint taskID, uint randomBits) public returns (bool) {
 		require(tasks[taskID].state == State.SolutionRevealed);
 		require(tasks[taskID].owner == msg.sender);
-		require(sha3(randomBits) == tasks[taskID].randomBitsHash);
+		require(keccak256(randomBits) == tasks[taskID].randomBitsHash);
 		tasks[taskID].state = State.VerificationGame;
-		if(uint(sha3(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
+		if(uint(keccak256(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
 			//jackpot
 		}
 		runVerificationGames(taskID);
@@ -235,7 +235,7 @@ contract TaskBook is DepositsManager {
   // @dev – ?
   // @param – ?
   // @return – ?
-	function runVerificationGames(uint taskID) {
+	function runVerificationGames(uint taskID) public {
 		require(tasks[taskID].state == State.VerificationGame);
 		// Task storage t = tasks[taskID];
 		Solution storage s = solutions[taskID];
