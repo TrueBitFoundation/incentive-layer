@@ -15,6 +15,7 @@ contract('TaskBook', function(accounts) {
     const verifier = accounts[3];
 
     const minDeposit = 500;
+    const reward = 500;
     const randomBits = 12345;
 
     it("should go through a Task being created, solved, and verified.", async () => {
@@ -38,7 +39,7 @@ contract('TaskBook', function(accounts) {
 
       // taskGiver creates a task.
       // they bond part of their deposit.
-      tx = await taskBook.createTask(minDeposit, 0x0, 5, {from: taskGiver});
+      tx = await taskBook.createTask(minDeposit, reward, 0x0, 5, {from: taskGiver});
       bond = await taskBook.getBondedDeposit.call(0, taskGiver);
       assert.equal(bond.toNumber(), 500);
       deposit = await taskBook.getDeposit.call(taskGiver);
@@ -51,8 +52,9 @@ contract('TaskBook', function(accounts) {
 
       log = tx.logs.find(log => log.event === 'TaskCreated')
       assert.equal(log.args.taskID.toNumber(), 0);
-      assert.equal(log.args.minDeposit, minDeposit);
-      // TODO: add a test for log.args.blockNumber
+      assert.equal(log.args.minDeposit, minDeposit); 
+      assert.equal(log.args.blockNumber.toNumber(), 5);
+      assert.equal(log.args.reward.toNumber(), reward);
       
       const taskID = log.args.taskID.toNumber();
       
@@ -115,7 +117,6 @@ contract('TaskBook', function(accounts) {
 
       // task giver trigger's solution verification
       await taskBook.verifySolution(taskID, 12345, {from: taskGiver});
-
     });
   });  
 });
