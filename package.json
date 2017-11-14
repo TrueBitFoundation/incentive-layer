@@ -1,6 +1,6 @@
 {
   "name": "truebit-contracts",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Incentive Layer for TrueBit protocol",
   "main": "truffle.js",
   "directories": {
@@ -11,15 +11,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hswick/truebit-contracts.git"
+    "url": "git+https://github.com/TrueBitFoundation/truebit-contracts.git"
   },
-  "author": "Harley Swick",
-  "license": "ISC",
+  "author": "TrueBit",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hswick/truebit-contracts/issues"
+    "url": "https://github.com/TrueBitFoundation/truebit-contracts/issues"
   },
-  "homepage": "https://github.com/hswick/truebit-contracts#readme",
-  "dependencies": {
-    "web3": "^1.0.0-beta.22"
+  "homepage": "https://github.com/TrueBitFoundation/truebit-contracts#readme",
+  "devDependencies": {
+    "truffle": "^4.0.1",
+    "web3": "^1.0.0-beta.24"
   }
 }
