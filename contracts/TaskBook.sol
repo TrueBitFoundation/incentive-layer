@@ -44,9 +44,13 @@ contract TaskBook is DepositsManager {
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
-	uint[7] timeoutWeights = [1, 2, 3, 4, 5, 6, 7];
+	uint[7] private timeoutWeights = [1, 2, 3, 4, 5, 6, 7];
 
-	function stateChangeTimeoutReached(uint taskID, uint numBlocks) returns (bool) {
+	// @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
+	// @param taskID - the task id.
+	// @param numBlocks - the difficulty weight for the task
+	// @return - boolean
+	function stateChangeTimeoutReached(uint taskID, uint numBlocks) private returns (bool) {
 		Task t = tasks[taskID];
 		return (numBlocks.mul(block.number.sub(t.taskCreationBlockNumber)) >= timeoutWeights[uint(t.state)]);
 	}
@@ -96,16 +100,17 @@ contract TaskBook is DepositsManager {
 	// @dev – returns the user's bonded deposits for a task.
 	// @param taskID – the task id.
 	// @param account – the user's address.
-	// @return – the uer's bonded deposits for a task.
+	// @return – the user's bonded deposits for a task.
 	function getBondedDeposit(uint taskID, address account) constant public returns (uint) {
 	  return tasks[taskID].bondedDeposits[account];
 	}
 
 	// @dev – taskGiver creates tasks to be solved.
   	// @param minDeposit – the minimum deposit required for engaging with a task as a solver or verifier.
+  	// @param reward - the payout given to solver
   	// @param taskData – tbd. could be hash of the wasm file on a filesystem.
-  	// @param numBlocks – ?
-  	// @return – ?
+  	// @param numBlocks – the number of blocks to adjust for task difficulty
+  	// @return – boolean
 	function createTask(uint minDeposit, uint reward, bytes32 taskData, uint numBlocks) public returns (bool) {
 		require(deposits[msg.sender] >= minDeposit);
 		Task storage t = tasks[numTasks];
@@ -121,27 +126,10 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-	function triggerTaskQueueTimeout(uint taskID) returns (bool) {
-		require(msg.sender == tasks[taskID].owner);
-		require(stateChangeTimeoutReached(taskID, 1));
-		//unlock task giver deposit
-		delete tasks[taskID];
-		return true;
-	}
-
-	function triggerTaskSolveTimeout(uint taskID) returns (bool) {
-		require(msg.sender == tasks[taskID].owner);
-		require(stateChangeTimeoutReached(taskID, tasks[taskID].numBlocks));
-		//punish solver
-		//unlock deposit for task giver
-		delete tasks[taskID];
-		return true;	
-	}
-
   	// @dev – changes a tasks state.
   	// @param taskID – the task id.
   	// @param newSate – the new state.
-  	// @return – ?
+  	// @return – boolean
 	function changeTaskState(uint taskID, uint newState) public returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
@@ -154,8 +142,8 @@ contract TaskBook is DepositsManager {
 	// @dev – solver registers for tasks, if first to register than automatically selected solver
 	//  0 -> 1
   	// @param taskID – the task id.
-  	// @param randomBitsHash – ?
-  	// @return – ?
+  	// @param randomBitsHash – hash of random bits to commit to task
+  	// @return – boolean
 	function registerForTask(uint taskID, bytes32 randomBitsHash) public returns(bool) {
 		Task storage t = tasks[taskID];
 		
@@ -176,9 +164,9 @@ contract TaskBook is DepositsManager {
 	// @dev – selected solver submits a solution to the exchange
 	// 1->2
   	// @param taskID – the task id.
- 	// @param solutionHash0 – ?
-  	// @param solutionHash1 – ?
-  	// @return – ?
+ 	// @param solutionHash0 – the hash of the solution (could be true or false solution)
+  	// @param solutionHash1 – the hash of the solution (could be true or false solution)
+  	// @return – boolean
 	function commitSolution(uint taskID, bytes32 solutionHash0, bytes32 solutionHash1) public returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
@@ -195,22 +183,21 @@ contract TaskBook is DepositsManager {
 	// @dev – verifier submits a challenge to the solution provided for a task
 	// verifiers can call this until task giver changes state or timeout
   	// @param taskID – the task id.
-  	// @param intentHash – ?
-  	// @return – ?
+  	// @param intentHash – submit hash of even or odd number to designate which solution is correct/incorrect.
+  	// @return – boolean
 	function commitChallenge(uint taskID, bytes32 intentHash) public returns (bool) {
 		Task storage t = tasks[taskID];
-    
-    	bondDeposit(taskID, msg.sender, t.minDeposit);
-
 		require(t.state == State.SolutionComitted);
+
+		bondDeposit(taskID, msg.sender, t.minDeposit);
 		t.challenges[msg.sender] = intentHash;
 		return true;
 	}
 
 	// @dev – verifiers can call this until task giver changes state or timeout
   	// @param taskID – the task id.
-  	// @param intent – ?
-  	// @return – ?
+  	// @param intent – submit the even or odd number in the open.
+  	// @return – boolean
 	function revealIntent(uint taskID, uint intent) public returns (bool) {
 		require(tasks[taskID].challenges[msg.sender] == keccak256(intent));
 		require(tasks[taskID].state == State.ChallengesAccepted);
@@ -223,12 +210,12 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-	// @dev – ?
+	// @dev – solver reveals which solution they say is the correct one
   	// 4->5
   	// @param taskID – the task id.
-  	// @param solution0Correct – ?
-  	// @param originalRandomBits – ?
-  	// @return – ?
+  	// @param solution0Correct – determines if solution0Hash is the correct solution
+  	// @param originalRandomBits – original random bits for sake of commitment.
+  	// @return – boolean
 	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) public returns (bool) {
 		require(tasks[taskID].randomBitsHash == keccak256(originalRandomBits));
 		require(tasks[taskID].state == State.IntentsRevealed);
@@ -242,8 +229,8 @@ contract TaskBook is DepositsManager {
 	// @dev – 5->6
 	// this assumes that the verification game will state who gets paid
   	// @param taskID – the task id.
-  	// @param randomBits – ?
-  	// @return – ?
+  	// @param randomBits – original random bits submitted by solver
+  	// @return – boolean
 	function verifySolution(uint taskID, uint randomBits) public returns (bool) {
 		require(tasks[taskID].state == State.SolutionRevealed);
 		require(tasks[taskID].owner == msg.sender);
@@ -256,9 +243,8 @@ contract TaskBook is DepositsManager {
 		return true;
 	}
 
-  	// @dev – ?
-  	// @param – ?
-  	// @return – ?
+  	// @dev – initiate verification games for solver and verifiers
+  	// @param taskID - the task id.
 	function runVerificationGames(uint taskID) public {
 		require(tasks[taskID].state == State.VerificationGame);
 		// Task storage t = tasks[taskID];
