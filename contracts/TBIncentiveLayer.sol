@@ -2,7 +2,7 @@ pragma solidity ^0.4.4;
 
 import './DepositsManager.sol';
 
-contract TaskBook is DepositsManager {
+contract TBIncentiveLayer is DepositsManager {
 
 	uint private numTasks = 0;
 	uint private forcedErrorThreshold = 42;

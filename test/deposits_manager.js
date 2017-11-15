@@ -1,13 +1,13 @@
 
-const TaskBook = artifacts.require('TaskBook.sol');
+const TBIncentiveLayer = artifacts.require('TBIncentiveLayer.sol');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
-contract('TaskBook', function(accounts) {
+contract('TBIncentiveLayer', function(accounts) {
   let depositsManager;
 
   beforeEach(async () => {
-      depositsManager = await TaskBook.new()
+      depositsManager = await TBIncentiveLayer.new()
   })
   
   describe('fallback', () => {

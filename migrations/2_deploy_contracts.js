@@ -1,5 +1,5 @@
-var TaskBook = artifacts.require("./TaskBook.sol");
+var TBIncentiveLayer = artifacts.require("./TBIncentiveLayer.sol");
 
 module.exports = function(deployer, network, thing) {
-  deployer.deploy(TaskBook);
+  deployer.deploy(TBIncentiveLayer);
 };
