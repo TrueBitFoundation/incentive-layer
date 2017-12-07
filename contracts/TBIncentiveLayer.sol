@@ -119,6 +119,7 @@ contract TBIncentiveLayer is DepositsManager {
 		t.reward = reward;
 		t.taskData = taskData;
 		t.taskCreationBlockNumber = block.number;
+		t.numBlocks = numBlocks;
 		bondDeposit(numTasks, msg.sender, minDeposit);
 		log0(keccak256(msg.sender));//possible bug if log is after event
 		TaskCreated(numTasks, minDeposit, numBlocks, reward);

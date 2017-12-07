@@ -3,25 +3,23 @@ var Web3 = require('web3');
 var web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 contract('TBIncentiveLayer', function(accounts) {
-  let tbIncentiveLayer;
+  let tbIncentiveLayer, deposit, bond, tx, log, taskID, intent;
 
-  beforeEach(async () => {
+  const taskGiver = accounts[1];
+  const solver = accounts[2];
+  const verifier = accounts[3];
+
+  const minDeposit = 500;
+  const reward = 500;
+  const randomBits = 12345;
+
+  context('incentive layer', () => {
+
+    before(async () => {
       tbIncentiveLayer = await TBIncentiveLayer.new()
-  })
+    })
 
-  describe('incentive layer', () => {
-    const taskGiver = accounts[1];
-    const solver = accounts[2];
-    const verifier = accounts[3];
-
-    const minDeposit = 500;
-    const reward = 500;
-    const randomBits = 12345;
-
-    it("should go through a Task being created, solved, and verified.", async () => {
-      let deposit, bond;
-      let tx, log;
-
+    it("should have participants make deposits", async () => {
       // taskGiver makes a deposit
       await tbIncentiveLayer.makeDeposit({from: taskGiver, value: 1000});
       deposit = await tbIncentiveLayer.getDeposit.call(taskGiver);
@@ -36,7 +34,9 @@ contract('TBIncentiveLayer', function(accounts) {
       await tbIncentiveLayer.makeDeposit({from: verifier, value: 1000});
       deposit = await tbIncentiveLayer.getDeposit.call(verifier);
       assert.equal(deposit.toNumber(), 1000);
+    })
 
+    it("should create task", async () => {
       // taskGiver creates a task.
       // they bond part of their deposit.
       tx = await tbIncentiveLayer.createTask(minDeposit, reward, 0x0, 5, {from: taskGiver});
@@ -56,8 +56,10 @@ contract('TBIncentiveLayer', function(accounts) {
       assert.equal(log.args.blockNumber.toNumber(), 5);
       assert.equal(log.args.reward.toNumber(), reward);
       
-      const taskID = log.args.taskID.toNumber();
-      
+      taskID = log.args.taskID.toNumber();
+    })
+
+    it("should select a solver", async () => {
       // solver registers for the task.
       // they bond part of their deposit.
       tx = await tbIncentiveLayer.registerForTask(taskID, web3.utils.soliditySha3(randomBits), {from: solver});
@@ -75,30 +77,36 @@ contract('TBIncentiveLayer', function(accounts) {
       assert.equal(log.args.taskData, 0x0);
       assert.equal(log.args.minDeposit, minDeposit);
       assert.equal(log.args.randomBitsHash, web3.utils.soliditySha3(randomBits));
+    })
 
+    it("should commit a solution", async () => {
       // solver commits their solutions.
       tx = await tbIncentiveLayer.commitSolution(taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver})
       log = tx.logs.find(log => log.event === 'SolutionsCommitted')
       assert.equal(log.args.taskID.toNumber(), taskID);
       assert.equal(log.args.minDeposit, minDeposit);
+    })
 
+    it("should commit a challenge", async () => {
       // verifier commits a challenge
       // they bond part of their deposit.
-      const intent = 2;
+      intent = 2;
       tx = await tbIncentiveLayer.commitChallenge(taskID, web3.utils.soliditySha3(intent), {from: verifier})
       log = tx.logs.find(log => log.event === 'DepositBonded')
       assert.equal(log.args.taskID.toNumber(), taskID);
       assert.equal(log.args.account, verifier);
       assert.equal(log.args.amount, minDeposit);
       deposit = await tbIncentiveLayer.getDeposit.call(verifier);
-      assert.equal(deposit.toNumber(), 500); 
+      assert.equal(deposit.toNumber(), 500);
 
       // taskGiver triggers task state transition
       tx = await tbIncentiveLayer.changeTaskState(taskID, 3, {from: taskGiver});
       log = tx.logs.find(log => log.event === 'TaskStateChange')
       assert.equal(log.args.taskID.toNumber(), taskID);
       assert.equal(log.args.state.toNumber(), 3);
+    })
 
+    it("should reveal intent", async () => {
       // state 3: challenges accepted
       // verifier reveals their intent
       await tbIncentiveLayer.revealIntent(taskID, intent, {from: verifier})
@@ -108,6 +116,9 @@ contract('TBIncentiveLayer', function(accounts) {
       log = tx.logs.find(log => log.event === 'TaskStateChange')
       assert.equal(log.args.taskID.toNumber(), taskID);
       assert.equal(log.args.state.toNumber(), 4);
+    })
+
+    it("should reveal and verify solution", async () => {
 
       // state 4: intents revealed
       tx = await tbIncentiveLayer.revealSolution(taskID, true, randomBits, {from: solver});
