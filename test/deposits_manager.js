@@ -3,7 +3,7 @@ const TBIncentiveLayer = artifacts.require('TBIncentiveLayer.sol');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
-contract('TBIncentiveLayer', function(accounts) {
+contract('DepositsManager', function(accounts) {
   let depositsManager;
 
   beforeEach(async () => {
@@ -68,7 +68,7 @@ contract('TBIncentiveLayer', function(accounts) {
       try {
         await depositsManager.withdrawDeposit(2000, {from: accounts[1]})
       } catch(error) {
-        assert.match(error, /VM Exception [a-zA-Z0-9 ]+: invalid opcode/);
+        assert.match(error, /VM Exception [a-zA-Z0-9 ]+/);
       }
 
       // deposit should not have changed.
