@@ -139,13 +139,11 @@ To run the tests with Docker:
 # Truffle
 This is a truffle codebase (see http://truffleframework.com/docs).
 
-`npm install -g ethereumjs-testrpc`
-
 `npm install truffle@v4.0.0-beta.0 -g` to install truffle
 
 `npm install` to install needed dependencies locally
 
-In a separate tab on the command line run `testrpc`
+In a separate tab on the command line run `ganache-cli`
 
 Then `truffle deploy` to deploy the contracts
 
