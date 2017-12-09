@@ -197,14 +197,17 @@ contract TBIncentiveLayer is DepositsManager {
 
 	// @dev – verifiers can call this until task giver changes state or timeout
   	// @param taskID – the task id.
-  	// @param intent – submit the even or odd number in the open.
+  	// @param intent – submit 0 to challenge solution0, 1 to challenge solution1, anything else challenges both
   	// @return – boolean
 	function revealIntent(uint taskID, uint intent) public returns (bool) {
 		require(tasks[taskID].challenges[msg.sender] == keccak256(intent));
 		require(tasks[taskID].state == State.ChallengesAccepted);
-		if(intent % 2 == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
+		if(intent == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
 			solutions[taskID].solution0Challengers.push(msg.sender);
+		}else if(intent == 1) {
+			solutions[taskID].solution1Challengers.push(msg.sender);
 		}else{
+			solutions[taskID].solution0Challengers.push(msg.sender);
 			solutions[taskID].solution1Challengers.push(msg.sender);
 		}
 		delete tasks[taskID].challenges[msg.sender];
