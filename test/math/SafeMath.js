@@ -1,6 +1,7 @@
 // source: https://github.com/OpenZeppelin/zeppelin-solidity
 
 const assertJump = require('../helpers/assertJump');
+const assertRevert = require('../helpers/assertRevert');
 var SafeMathMock = artifacts.require("../helpers/SafeMathMock.sol");
 
 contract('SafeMath', function(accounts) {
@@ -55,7 +56,7 @@ contract('SafeMath', function(accounts) {
       let add = await safeMath.add(a, b);
       assert.fail('should have thrown before');
     } catch(error) {
-      assertJump(error);
+      assertRevert(error);
     }
   });
 
@@ -66,7 +67,7 @@ contract('SafeMath', function(accounts) {
       let multiply = await safeMath.multiply(a, b);
       assert.fail('should have thrown before');
     } catch(error) {
-      assertJump(error);
+      assertRevert(error);
     }
   });
 
