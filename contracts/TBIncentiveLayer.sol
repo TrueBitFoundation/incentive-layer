@@ -16,7 +16,7 @@ contract TBIncentiveLayer is DepositsManager {
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
 
-	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame }
+	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame, TaskSolved }
 
 	struct Task {
 		address owner;
@@ -44,7 +44,7 @@ contract TBIncentiveLayer is DepositsManager {
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
-	uint[7] private timeoutWeights = [1, 2, 3, 4, 5, 6, 7];
+	uint[7] private timeoutWeights = [1, 2, 3, 4, 5, 6, 7, 8];
 
 	// @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
 	// @param taskID - the task id.
@@ -73,12 +73,13 @@ contract TBIncentiveLayer is DepositsManager {
 	// @param taskID – the task id.
 	// @param account – the user's address.
 	// @return – the user's deposit which was unbonded from the task.
-	function unbondDeposit(uint taskID, address account) private returns (uint) {
+	function unbondDeposit(uint taskID) public returns (uint) {
 	  Task storage task = tasks[taskID];
-	  uint bondedDeposit = task.bondedDeposits[account];
-	  delete task.bondedDeposits[account];
-	  deposits[account] = deposits[account].add(bondedDeposit);
-	  DepositUnbonded(taskID, account, bondedDeposit);
+	  require(task.state == State.TaskSolved)
+	  uint bondedDeposit = task.bondedDeposits[msg.sender];
+	  delete task.bondedDeposits[msg.sender];
+	  deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
+	  DepositUnbonded(taskID, msg.sender, bondedDeposit);
 	  
 	  return bondedDeposit;
 	}
