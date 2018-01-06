@@ -44,7 +44,7 @@ contract TBIncentiveLayer is DepositsManager {
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
-	uint[7] private timeoutWeights = [1, 2, 3, 4, 5, 6, 7, 8];
+	uint8[8] private timeoutWeights = [1, 2, 3, 4, 5, 6, 7, 8];
 
 	// @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
 	// @param taskID - the task id.
@@ -75,7 +75,7 @@ contract TBIncentiveLayer is DepositsManager {
 	// @return – the user's deposit which was unbonded from the task.
 	function unbondDeposit(uint taskID) public returns (uint) {
 	  Task storage task = tasks[taskID];
-	  require(task.state == State.TaskSolved)
+	  require(task.state == State.TaskSolved);
 	  uint bondedDeposit = task.bondedDeposits[msg.sender];
 	  delete task.bondedDeposits[msg.sender];
 	  deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
