@@ -103,10 +103,10 @@ tbIncentiveLayer.commitChallenge(taskID, minDeposit, intentHash, {from: verifier
 tbIncentiveLayer.changeTaskState(taskID, 3, {from: task_giver});
 ```
 
-State 3: Reveal Intent - is the time period where the verifiers that have committed challenges reveal which solution they believe is correct. Solution0 or Solution1 by revealing either an even or odd number. Then after a given time period the task giver changes the state to 4.
+State 3: Reveal Intent - is the time period where the verifiers that have committed challenges reveal which solution they believe is correct. Solution0 or Solution1 by revealing either 0 or 1, anything else is an intent to challenge both solutions. Then after a given time period the task giver changes the state to 4.
 
 ```javascript
-tbIncentiveLayer.revealIntent(taskID, 2, {from: verifier});
+tbIncentiveLayer.revealIntent(taskID, 0, {from: verifier});
 
 tbIncentiveLayer.changeTaskState(taskID, 4, {from: task_giver});
 ```

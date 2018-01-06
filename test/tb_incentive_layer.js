@@ -90,7 +90,7 @@ contract('TBIncentiveLayer', function(accounts) {
     it("should commit a challenge", async () => {
       // verifier commits a challenge
       // they bond part of their deposit.
-      intent = 2;
+      intent = 0;
       tx = await tbIncentiveLayer.commitChallenge(taskID, web3.utils.soliditySha3(intent), {from: verifier})
       log = tx.logs.find(log => log.event === 'DepositBonded')
       assert.equal(log.args.taskID.toNumber(), taskID);
