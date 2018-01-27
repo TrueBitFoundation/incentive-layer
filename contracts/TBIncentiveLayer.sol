@@ -50,8 +50,8 @@ contract TBIncentiveLayer is DepositsManager {
 	// @param taskID - the task id.
 	// @param numBlocks - the difficulty weight for the task
 	// @return - boolean
-	function stateChangeTimeoutReached(uint taskID, uint numBlocks) private returns (bool) {
-		Task t = tasks[taskID];
+	function stateChangeTimeoutReached(uint taskID, uint numBlocks) private view returns (bool) {
+		Task storage t = tasks[taskID];
 		return (numBlocks.mul(block.number.sub(t.taskCreationBlockNumber)) >= timeoutWeights[uint(t.state)]);
 	}
 
@@ -251,21 +251,25 @@ contract TBIncentiveLayer is DepositsManager {
   	// @dev – initiate verification games for solver and verifiers
   	// @param taskID - the task id.
 	function runVerificationGames(uint taskID) public {
-		require(tasks[taskID].state == State.VerificationGame);
-		// Task storage t = tasks[taskID];
+		Task storage t = tasks[taskID];
+		require(t.state == State.VerificationGame);
 		Solution storage s = solutions[taskID];
 		if(s.solution0Correct) {
 			for(uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
-				// verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData, s.solutionHash0);
-        break;
+				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData, s.solutionHash0);
 			}
 		} else {
 			for(uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
-				// verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[j], t.taskData, s.solutionHash1);
-        break;
+				verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[j], t.taskData, s.solutionHash1);
 			}
 		}
 	}
 
-	// function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash);
+	function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) public {
+		solver;
+		challenger;
+		taskData;
+		solutionHash;
+		// noop
+	}
 }

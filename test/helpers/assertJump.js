@@ -1,5 +1,0 @@
-// source: https://github.com/OpenZeppelin/zeppelin-solidity
-
-module.exports = function(error) {
-  assert.isAbove(error.message.search('invalid opcode'), -1, 'Invalid opcode error must be returned');
-}
