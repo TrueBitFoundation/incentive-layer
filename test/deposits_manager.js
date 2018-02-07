@@ -12,13 +12,9 @@ contract('DepositsManager', function(accounts) {
   
   describe('fallback', () => {
     it('should make a deposit', async () => {
-      // TODO: this is throwing an 'invalid opcode' error.
-      // Seems like it might be an issue with testrpc
-      // https://github.com/ethereumjs/testrpc/issues/84
-
-      const tx = await web3.eth.sendTransaction({to: depositsManager.address, from: accounts[1], value: web3.toWei(1, 'ether')});
+      const tx = await web3.eth.sendTransaction({to: depositsManager.address, from: accounts[1], value: web3.utils.toWei('1', 'ether')});
       const deposit = await depositsManager.getDeposit.call(accounts[1]);
-      assert.equal(deposit.toNumber(), 1);
+      assert.equal(deposit.toNumber(), web3.utils.toWei('1', 'ether'));
       return;
     });
   })
