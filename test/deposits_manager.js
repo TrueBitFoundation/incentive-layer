@@ -1,5 +1,5 @@
 
-const TBIncentiveLayer = artifacts.require('TBIncentiveLayer.sol');
+const IncentiveLayer = artifacts.require('IncentiveLayer.sol');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
@@ -7,7 +7,7 @@ contract('DepositsManager', function(accounts) {
   let depositsManager;
 
   beforeEach(async () => {
-      depositsManager = await TBIncentiveLayer.new()
+      depositsManager = await IncentiveLayer.new()
   })
   
   describe('fallback', () => {
