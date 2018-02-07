@@ -44,15 +44,15 @@ contract IncentiveLayer is DepositsManager {
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
-	uint8[8] private timeoutWeights = [1, 2, 3, 4, 5, 6, 7, 8];
+	uint8[8] private timeoutWeights = [1, 20, 3, 4, 5, 6, 7, 8];
 
 	// @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
 	// @param taskID - the task id.
 	// @param numBlocks - the difficulty weight for the task
 	// @return - boolean
-	function stateChangeTimeoutReached(uint taskID, uint numBlocks) private view returns (bool) {
+	function stateChangeTimeoutReached(uint taskID) private view returns (bool) {
 		Task storage t = tasks[taskID];
-		return (numBlocks.mul(block.number.sub(t.taskCreationBlockNumber)) >= timeoutWeights[uint(t.state)]);
+		return block.number - t.taskCreationBlockNumber >= timeoutWeights[uint(t.state)-1];
 	}
 
 	// @dev – locks up part of the a user's deposit into a task.
@@ -135,7 +135,7 @@ contract IncentiveLayer is DepositsManager {
 	function changeTaskState(uint taskID, uint newState) public returns (bool) {
 		Task storage t = tasks[taskID];
 		require(t.owner == msg.sender);
-		require(stateChangeTimeoutReached(taskID, 1));
+		require(stateChangeTimeoutReached(taskID));
 		t.state = State(newState);
 		TaskStateChange(taskID, newState);
 		return true;
@@ -203,11 +203,11 @@ contract IncentiveLayer is DepositsManager {
 	function revealIntent(uint taskID, uint intent) public returns (bool) {
 		require(tasks[taskID].challenges[msg.sender] == keccak256(intent));
 		require(tasks[taskID].state == State.ChallengesAccepted);
-		if(intent == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
+		if (intent == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
 			solutions[taskID].solution0Challengers.push(msg.sender);
-		}else if(intent == 1) {
+		} else if (intent == 1) {
 			solutions[taskID].solution1Challengers.push(msg.sender);
-		}else{
+		} else {
 			solutions[taskID].solution0Challengers.push(msg.sender);
 			solutions[taskID].solution1Challengers.push(msg.sender);
 		}
@@ -241,7 +241,7 @@ contract IncentiveLayer is DepositsManager {
 		require(tasks[taskID].owner == msg.sender);
 		require(keccak256(randomBits) == tasks[taskID].randomBitsHash);
 		tasks[taskID].state = State.VerificationGame;
-		if(uint(keccak256(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
+		if (uint(keccak256(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
 			//jackpot
 		}
 		runVerificationGames(taskID);
@@ -254,12 +254,12 @@ contract IncentiveLayer is DepositsManager {
 		Task storage t = tasks[taskID];
 		require(t.state == State.VerificationGame);
 		Solution storage s = solutions[taskID];
-		if(s.solution0Correct) {
-			for(uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
+		if (s.solution0Correct) {
+			for (uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
 				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData, s.solutionHash0);
 			}
 		} else {
-			for(uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
+			for (uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
 				verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[j], t.taskData, s.solutionHash1);
 			}
 		}

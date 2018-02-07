@@ -1,8 +1,11 @@
 var IncentiveLayer = artifacts.require('./IncentiveLayer.sol');
-var Web3 = require('web3');
-var web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+const Web3 = require('web3');
+const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
-contract('TBIncentiveLayer', function(accounts) {
+const timeout = require('./helpers/timeout')
+const mineBlocks = require('./helpers/mineBlocks')
+
+contract('IncentiveLayer', function(accounts) {
   let incentiveLayer, deposit, bond, tx, log, taskID, intent;
 
   const taskGiver = accounts[1];
@@ -98,6 +101,8 @@ contract('TBIncentiveLayer', function(accounts) {
       assert.equal(log.args.amount, minDeposit);
       deposit = await incentiveLayer.getDeposit.call(verifier);
       assert.equal(deposit.toNumber(), 500);
+
+      await mineBlocks(web3, 20);
 
       // taskGiver triggers task state transition
       tx = await incentiveLayer.changeTaskState(taskID, 3, {from: taskGiver});
