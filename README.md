@@ -15,12 +15,6 @@ Then `truffle deploy` to deploy the contracts
 
 `truffle test` to run tests
 
-Currently tests only pass if run separately (believe this is due to how taskID works)
-
-`truffle test test/task_book.js`
-
-`truffle test test/exchange.js`
-
 # TaskGiver
 This is a user that creates a new task. They exchange Ether for computing tasks like running some C code. Alice can send out a task to be solved with the `createTask` method. That method creates a Task, an ID for that Task, and stores the information in a mapping. A TaskCreated event is broadcasted over the network.
 

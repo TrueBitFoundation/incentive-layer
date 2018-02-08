@@ -30,5 +30,19 @@ contract('IncentiveLayer Timeouts', function(accounts) {
       await incentiveLayer.taskGiverTimeout(taskID, {from: taskGiver})
       assert.equal(minDeposit, (await incentiveLayer.getDeposit.call(solver)).toNumber())
     })
+
+    it('should unbond task giver deposit', async () => {
+      tx = await incentiveLayer.unbondDeposit(taskID, {from: taskGiver})
+      log = tx.logs.find(log => log.event === 'DepositUnbonded')
+      assert.equal(taskID, log.args.taskID.toNumber())
+      assert.equal(taskGiver, log.args.account)
+      assert.equal(minDeposit, log.args.amount.toNumber())
+      assert.equal(minDeposit*2, (await incentiveLayer.getDeposit.call(taskGiver)).toNumber())
+    })
+
+    it('should unbond solver deposit', async () => {
+      await incentiveLayer.unbondDeposit(taskID, {from: solver})
+      assert.equal(minDeposit, (await incentiveLayer.getDeposit.call(solver)).toNumber())
+    })
   })
 })

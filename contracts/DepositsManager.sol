@@ -65,9 +65,4 @@ contract DepositsManager {
     JackpotIncreased(msg.value);
     return jackpot;
   }
-
-  function transferMinDepositToJackpot(address depositHolder, uint minDeposit) internal {
-    deposits[depositHolder].sub(minDeposit);
-    jackpot.add(minDeposit);
-  }
 }

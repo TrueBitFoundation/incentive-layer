@@ -16,7 +16,7 @@ contract IncentiveLayer is DepositsManager {
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
 
-	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame, TaskSolved }
+	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame, TaskSolved, TaskTimeout }
 
 	struct Task {
 		address owner;
@@ -75,7 +75,7 @@ contract IncentiveLayer is DepositsManager {
 	// @return – the user's deposit which was unbonded from the task.
 	function unbondDeposit(uint taskID) public returns (uint) {
 	  Task storage task = tasks[taskID];
-	  require(task.state == State.TaskSolved);
+	  require(task.state == State.TaskSolved || task.state == State.TaskTimeout);
 	  uint bondedDeposit = task.bondedDeposits[msg.sender];
 	  delete task.bondedDeposits[msg.sender];
 	  deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
@@ -189,7 +189,8 @@ contract IncentiveLayer is DepositsManager {
 		Solution storage s = solutions[taskID];
 		require(s.solutionHash0 == 0x0 && s.solutionHash1 == 0x0);
 		require(block.number > t.taskCreationBlockNumber.add(t.numBlocks));
-		transferMinDepositToJackpot(t.selectedSolver, t.minDeposit);
+		moveBondedDepositToJackpot(taskID, t.selectedSolver);
+		t.state = State.TaskTimeout;
 	}
 
 	// @dev – verifier submits a challenge to the solution provided for a task
