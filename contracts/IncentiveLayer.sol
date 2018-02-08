@@ -183,6 +183,15 @@ contract IncentiveLayer is DepositsManager {
 		return true;
 	}
 
+	function taskGiverTimeout(uint taskID) public {
+		Task storage t = tasks[taskID];
+		require(msg.sender == t.owner);
+		Solution storage s = solutions[taskID];
+		require(s.solutionHash0 == 0x0 && s.solutionHash1 == 0x0);
+		require(block.number > t.taskCreationBlockNumber.add(t.numBlocks));
+		transferMinDepositToJackpot(t.selectedSolver, t.minDeposit);
+	}
+
 	// @dev – verifier submits a challenge to the solution provided for a task
 	// verifiers can call this until task giver changes state or timeout
   	// @param taskID – the task id.
