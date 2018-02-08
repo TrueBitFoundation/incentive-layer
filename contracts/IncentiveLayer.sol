@@ -253,32 +253,21 @@ contract IncentiveLayer is DepositsManager {
 		tasks[taskID].state = State.VerificationGame;
 		if (uint(keccak256(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
 			//jackpot
+			return true;
 		}
-		runVerificationGames(taskID);
+		runVerificationGame(taskID, 0);
 		return true;
 	}
 
 	//For now only one verification game
-	function runVerificationGame(uint taskID) public {
-		Task storage t = tasks[taskID];
-		require(t.state == State.VerificationGame);
-
-	}
-
-  	// @dev – initiate verification games for solver and verifiers
-  	// @param taskID - the task id.
-	function runVerificationGames(uint taskID) public {
+	function runVerificationGame(uint taskID, uint challengerIndex) public {
 		Task storage t = tasks[taskID];
 		require(t.state == State.VerificationGame);
 		Solution storage s = solutions[taskID];
 		if (s.solution0Correct) {
-			for (uint i = 0; i < solutions[taskID].solution0Challengers.length; i++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[i], t.taskData, s.solutionHash0);
-			}
+			verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[challengerIndex], t.taskData, s.solutionHash0);
 		} else {
-			for (uint j = 0; j < solutions[taskID].solution1Challengers.length; j++) {
-				verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[j], t.taskData, s.solutionHash1);
-			}
+			verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[challengerIndex], t.taskData, s.solutionHash0);
 		}
 	}
 
