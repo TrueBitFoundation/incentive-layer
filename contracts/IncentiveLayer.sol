@@ -44,7 +44,7 @@ contract IncentiveLayer is DepositsManager {
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
-	uint8[8] private timeoutWeights = [1, 20, 3, 4, 5, 6, 7, 8];
+	uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55];
 
 	// @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
 	// @param taskID - the task id.
@@ -52,7 +52,7 @@ contract IncentiveLayer is DepositsManager {
 	// @return - boolean
 	function stateChangeTimeoutReached(uint taskID) private view returns (bool) {
 		Task storage t = tasks[taskID];
-		return block.number - t.taskCreationBlockNumber >= timeoutWeights[uint(t.state)-1];
+		return block.number.sub(t.taskCreationBlockNumber) >= timeoutWeights[uint(t.state)-1];
 	}
 
 	// @dev – locks up part of the a user's deposit into a task.
@@ -173,6 +173,7 @@ contract IncentiveLayer is DepositsManager {
 		Task storage t = tasks[taskID];
 		require(t.selectedSolver == msg.sender);
 		require(t.state == State.SolverSelected);
+		require(block.number < t.taskCreationBlockNumber.add(t.numBlocks));
 		Solution storage s = solutions[taskID];
 		s.solutionHash0 = solutionHash0;
 		s.solutionHash1 = solutionHash1;
@@ -248,6 +249,13 @@ contract IncentiveLayer is DepositsManager {
 		return true;
 	}
 
+	//For now only one verification game
+	function runVerificationGame(uint taskID) public {
+		Task storage t = tasks[taskID];
+		require(t.state == State.VerificationGame);
+
+	}
+
   	// @dev – initiate verification games for solver and verifiers
   	// @param taskID - the task id.
 	function runVerificationGames(uint taskID) public {
@@ -271,5 +279,6 @@ contract IncentiveLayer is DepositsManager {
 		taskData;
 		solutionHash;
 		// noop
+
 	}
 }

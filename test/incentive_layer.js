@@ -1,4 +1,4 @@
-var IncentiveLayer = artifacts.require('./IncentiveLayer.sol');
+const IncentiveLayer = artifacts.require('./IncentiveLayer.sol');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
@@ -115,6 +115,8 @@ contract('IncentiveLayer', function(accounts) {
       // state 3: challenges accepted
       // verifier reveals their intent
       await incentiveLayer.revealIntent(taskID, intent, {from: verifier})
+
+      await mineBlocks(web3, 10);
 
       // taskGiver triggers task  state transition
       tx = await incentiveLayer.changeTaskState(taskID, 4, {from: taskGiver});
