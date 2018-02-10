@@ -1,0 +1,22 @@
+dist: trusty
+sudo: required
+language: node_js
+node_js:
+  - "8.9"
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      before_install: 
+      - npm install
+      - npm install truffle@v4.0.0-beta.0 -g
+
+install: 
+  - ganache-cli 2>&1 /dev/null &
+
+script: 
+#- truffle deploy
+  - truffle test
+    #- truffle test test/task_book.js
+    #- truffle test test/exchange.js
