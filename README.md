@@ -15,12 +15,6 @@ Then `truffle deploy` to deploy the contracts
 
 `truffle test` to run tests
 
-Currently tests only pass if run separately (believe this is due to how taskID works)
-
-`truffle test test/task_book.js`
-
-`truffle test test/exchange.js`
-
 # TaskGiver
 This is a user that creates a new task. They exchange Ether for computing tasks like running some C code. Alice can send out a task to be solved with the `createTask` method. That method creates a Task, an ID for that Task, and stores the information in a mapping. A TaskCreated event is broadcasted over the network.
 
@@ -112,7 +106,7 @@ A solver is selected based on who registers for task. This can also be thought o
 incentiveLayer.commitSolution(taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver});
 ```
 
-Notice that two solution hashes are being input. This is input because one of the hashes is for a forced error and another is for the real solution. At this point only the Solver is aware which solutionHash is 'correct'.
+Notice that two solution hashes are input. This is done because one of the hashes is for a forced error and another is for the real solution. At this point only the Solver is aware which solutionHash is 'correct'.
 
 Now that a solution is committed there is a time period for challenges to be accepted. This is called State 2: Challenge Queue. These challenges will come from verifiers. It is assumed at least one challenge will come from a solver. This also has the effect of bonding the verifier's deposit. Once a given time period ends the task giver will call this function to change the state of the task. Only the task giver (owner of task) is allowed to call this function.
 
