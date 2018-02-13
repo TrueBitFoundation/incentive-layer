@@ -16,7 +16,4 @@ install:
   - ganache-cli 2>&1 /dev/null &
 
 script: 
-#- truffle deploy
   - truffle test
-    #- truffle test test/task_book.js
-    #- truffle test test/exchange.js
