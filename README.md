@@ -1,5 +1,9 @@
 # Truebit Incentive Layer
 
+<p align="center">
+  <img src="./Incentive Layer.jpg"/>
+</p>
+
 This repo hosts the smart contract code related to the Truebit incentive layer. We have a contract called IncentiveLayer that inherits from the DepositsManager contract. Which handles operations like keeping track of a balance, submitting a deposit, bonding a deposit, slashing deposit, etc.  Users can submit deposits to these contracts which will effectively start an account on the IncentiveLayer. Once a user has an account they have the ability to create, solve, or verify tasks. A creator of a task is known as a Task Giver. Solvers solve tasks, and Verifiers verify tasks. The data that each of these agents interact with is contained in a struct. The lifecycle of a task is implemented as a finite state machine.
 
 # Install
