@@ -1,8 +1,9 @@
 pragma solidity ^0.4.4;
 
 import './DepositsManager.sol';
+import './JackpotManager.sol';
 
-contract IncentiveLayer is DepositsManager {
+contract IncentiveLayer is JackpotManager, DepositsManager {
 
 	uint private numTasks = 0;
 	uint private forcedErrorThreshold = 42;

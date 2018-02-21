@@ -72,16 +72,5 @@ contract('DepositsManager', function(accounts) {
       assert.equal(deposit.toNumber(), 1000);
     });
   });
-  
-  describe('donateToJackpot', () => {
-    it('should donate to the jackpot', async () => {
-      const tx = await depositsManager.donateToJackpot({from: accounts[1], value: 1000});
-      log = tx.logs.find(log => log.event === 'JackpotIncreased')
-      assert.equal(log.args.amount.toNumber(), 1000);
-
-      const jackpot = await depositsManager.getJackpot.call();
-      assert.equal(jackpot.toNumber(), 1000);
-    });
-  })
 });
 

@@ -7,4 +7,4 @@ module.exports = {
       gas: 4600000
     }
   }
-};
+}

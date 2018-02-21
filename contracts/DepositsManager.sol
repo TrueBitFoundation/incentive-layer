@@ -16,7 +16,6 @@ contract DepositsManager {
   // @dev – the constructor
   function DepositsManager() public {
     owner = msg.sender;
-    jackpot = 0;
   }
   
   // @dev – fallback to calling makeDeposit when ether is sent directly to contract.
@@ -29,12 +28,6 @@ contract DepositsManager {
   // @return – the account's deposit.
   function getDeposit(address who) constant public returns (uint) {
     return deposits[who];
-  }
-
-  // @dev – returns the current jackpot
-  // @return – the jackpot.
-  function getJackpot() constant public returns (uint) {
-    return jackpot;
   }
 
   // @dev – allows a user to deposit eth.
@@ -58,11 +51,4 @@ contract DepositsManager {
     return deposits[msg.sender];
   }
 
-  // @dev – allows a uer to donate to the jackpot.
-  // @return – the updated jackpot amount.
-  function donateToJackpot() public payable returns (uint) {
-    jackpot = jackpot.add(msg.value);
-    JackpotIncreased(msg.value);
-    return jackpot;
-  }
 }
