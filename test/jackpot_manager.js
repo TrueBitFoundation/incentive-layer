@@ -16,7 +16,7 @@ contract('JackpotManager', function(accounts) {
       log = tx.logs.find(log => log.event === 'JackpotIncreased')
       assert.equal(log.args.amount.toNumber(), 1000);
 
-      const jackpot = await jackpotManager.getJackpot.call();
+      const jackpot = await jackpotManager.getJackpotAmount.call();
       assert.equal(jackpot.toNumber(), 1000);
     });
   })

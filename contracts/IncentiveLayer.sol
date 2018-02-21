@@ -17,7 +17,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
 
-	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame, TaskSolved, TaskTimeout }
+	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, TaskSolved, TaskTimeout }
 
 	struct Task {
 		address owner;
@@ -31,7 +31,10 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		bytes32 randomBitsHash;
 		uint numBlocks;
 		uint taskCreationBlockNumber;
-    	mapping(address => uint) bondedDeposits;
+    mapping(address => uint) bondedDeposits;
+		uint randomBits;
+		uint finalityCode; //0 => not finalized, 1 => finalized, 2 => forced error occurred
+		uint jackpotID;
 	}
 
 	struct Solution {
@@ -40,12 +43,13 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		bool solution0Correct;
 		address[] solution0Challengers;
 		address[] solution1Challengers;
+		uint currentChallenger;
 	}
 
 	mapping(uint => Task) private tasks;
 	mapping(uint => Solution) private solutions;
 
-	uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55];
+	uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55];//one timeout per state in the FSM
 
 	// @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
 	// @param taskID - the task id.
@@ -233,52 +237,62 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
   	// @param solution0Correct – determines if solution0Hash is the correct solution
   	// @param originalRandomBits – original random bits for sake of commitment.
   	// @return – boolean
-	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) public returns (bool) {
-		require(tasks[taskID].randomBitsHash == keccak256(originalRandomBits));
-		require(tasks[taskID].state == State.IntentsRevealed);
-		require(tasks[taskID].selectedSolver == msg.sender);
+	function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) public {
+		Task storage t = tasks[taskID];
+		require(t.randomBitsHash == keccak256(originalRandomBits));
+		require(t.state == State.IntentsRevealed);
+		require(t.selectedSolver == msg.sender);
 		solutions[taskID].solution0Correct = solution0Correct;
-		tasks[taskID].state = State.SolutionRevealed;
-		SolutionRevealed(taskID, originalRandomBits);
-		return true;
+		t.state = State.SolutionRevealed;
+		t.randomBits = originalRandomBits;
+		if (isForcedError(originalRandomBits)) { //this if statement will make this function tricky to test
+			rewardJackpot(taskID);
+			t.finalityCode = 2;
+		} else {
+			SolutionRevealed(taskID, originalRandomBits);
+		}
 	}
 
-	// @dev – 5->6
-	// this assumes that the verification game will state who gets paid
-  	// @param taskID – the task id.
-  	// @param randomBits – original random bits submitted by solver
-  	// @return – boolean
-	function verifySolution(uint taskID, uint randomBits) public returns (bool) {
-		require(tasks[taskID].state == State.SolutionRevealed);
-		require(tasks[taskID].owner == msg.sender);
-		require(keccak256(randomBits) == tasks[taskID].randomBitsHash);
-		tasks[taskID].state = State.VerificationGame;
-		if (uint(keccak256(randomBits, tasks[taskID].blockhash)) < forcedErrorThreshold) {//Forced error
-			//jackpot
-			return true;
-		}
-		runVerificationGame(taskID, 0);
-		return true;
+	function isForcedError(uint randomBits) internal view returns (bool) {
+		return (uint(keccak256(randomBits, block.blockhash(block.number))) < forcedErrorThreshold);
+	}
+
+	function rewardJackpot(uint taskID) internal {
+		Task storage t = tasks[taskID];
+		Solution storage s = solutions[taskID];
+		t.jackpotID = setJackpotReceivers(s.solution0Challengers, s.solution1Challengers);
 	}
 
 	//For now only one verification game
 	function runVerificationGame(uint taskID, uint challengerIndex) public {
 		Task storage t = tasks[taskID];
-		require(t.state == State.VerificationGame);
+		require(t.state == State.SolutionRevealed);
 		Solution storage s = solutions[taskID];
 		if (s.solution0Correct) {
 			verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[challengerIndex], t.taskData, s.solutionHash0);
 		} else {
-			verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[challengerIndex], t.taskData, s.solutionHash0);
+			verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[challengerIndex], t.taskData, s.solutionHash1);
 		}
+		s.currentChallenger = s.currentChallenger + 1;
 	}
 
-	function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) public {
+	function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal {
 		solver;
 		challenger;
 		taskData;
 		solutionHash;
 		// noop
-
+		
 	}
+
+	function finalizeTask(uint taskID) public {
+		Task storage t = tasks[taskID];
+		Solution storage s = solutions[taskID];
+		require(t.owner == msg.sender);
+		require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
+
+		t.finalityCode = 1;//Task has been completed
+	}
+
+
 }
