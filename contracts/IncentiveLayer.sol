@@ -17,7 +17,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
 
-	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, TaskSolved, TaskTimeout }
+	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, TaskFinalized, TaskTimeout }
 
 	struct Task {
 		address owner;
@@ -80,7 +80,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 	// @return – the user's deposit which was unbonded from the task.
 	function unbondDeposit(uint taskID) public returns (uint) {
 	  Task storage task = tasks[taskID];
-	  require(task.state == State.TaskSolved || task.state == State.TaskTimeout);
+	  require(task.state == State.TaskFinalized || task.state == State.TaskTimeout);
 	  uint bondedDeposit = task.bondedDeposits[msg.sender];
 	  delete task.bondedDeposits[msg.sender];
 	  deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
@@ -158,14 +158,14 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		require(t.state == State.TaskInitialized);
 		require(t.selectedSolver == 0x0);
     
-    	bondDeposit(taskID, msg.sender, t.minDeposit);
+    bondDeposit(taskID, msg.sender, t.minDeposit);
 		t.selectedSolver = msg.sender;
 		t.randomBitsHash = randomBitsHash;
 		t.blockhash = block.blockhash(block.number.add(1));
 		t.state = State.SolverSelected;
 
 		SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit, t.randomBitsHash);	
-    	return true;
+    return true;
 	}
 
 	// @dev – selected solver submits a solution to the exchange
@@ -248,6 +248,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		if (isForcedError(originalRandomBits)) { //this if statement will make this function tricky to test
 			rewardJackpot(taskID);
 			t.finalityCode = 2;
+			t.state = State.TaskFinalized;
 		} else {
 			SolutionRevealed(taskID, originalRandomBits);
 		}
@@ -263,15 +264,15 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		t.jackpotID = setJackpotReceivers(s.solution0Challengers, s.solution1Challengers);
 	}
 
-	//For now only one verification game
-	function runVerificationGame(uint taskID, uint challengerIndex) public {
+	//verifier should be responsible for calling this first
+	function runVerificationGame(uint taskID) public {
 		Task storage t = tasks[taskID];
 		require(t.state == State.SolutionRevealed);
 		Solution storage s = solutions[taskID];
 		if (s.solution0Correct) {
-			verificationGame(t.selectedSolver, solutions[taskID].solution0Challengers[challengerIndex], t.taskData, s.solutionHash0);
+			verificationGame(t.selectedSolver, s.solution0Challengers[s.currentChallenger], t.taskData, s.solutionHash0);
 		} else {
-			verificationGame(t.selectedSolver, solutions[taskID].solution1Challengers[challengerIndex], t.taskData, s.solutionHash1);
+			verificationGame(t.selectedSolver, s.solution1Challengers[s.currentChallenger], t.taskData, s.solutionHash1);
 		}
 		s.currentChallenger = s.currentChallenger + 1;
 	}
@@ -290,9 +291,12 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		Solution storage s = solutions[taskID];
 		require(t.owner == msg.sender);
 		require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
-
+		t.state = State.TaskFinalized;
 		t.finalityCode = 1;//Task has been completed
 	}
 
+	function getTaskFinality(uint taskID) public view returns (uint) {
+		return tasks[taskID].finalityCode;
+	}
 
 }

@@ -130,8 +130,35 @@ contract('IncentiveLayer', function(accounts) {
       // state 4: intents revealed
       tx = await incentiveLayer.revealSolution(taskID, true, randomBits, {from: solver})
       log = tx.logs.find(log => log.event === 'SolutionRevealed')
-      assert.equal(log.args.taskID.toNumber(), taskID)
-      assert.equal(log.args.randomBits.toNumber(), randomBits)
+      if(log) {
+        assert.equal(log.args.taskID.toNumber(), taskID)
+        assert.equal(log.args.randomBits.toNumber(), randomBits)
+      } else {
+        assert.equal((await incentiveLayer.getTaskFinality.call(taskID)).toNumber(), 2)
+      }
+    })
+
+    it('should run verification game', async () => {
+      await incentiveLayer.runVerificationGame(taskID, {from: verifier})
+
+      await incentiveLayer.finalizeTask(taskID, {from: taskGiver})
+
+      assert.equal((await incentiveLayer.getTaskFinality.call(taskID)).toNumber(), 1)
+    })
+
+    it('should unbond solver deposit', async () => {
+      await incentiveLayer.unbondDeposit(taskID, {from: solver})
+      assert.equal(1000, (await incentiveLayer.getDeposit.call(solver)).toNumber())
+    })
+
+    it('should unbond task giver deposit', async () => {
+      await incentiveLayer.unbondDeposit(taskID, {from: taskGiver})
+      assert.equal(1000, (await incentiveLayer.getDeposit.call(taskGiver)).toNumber())
+    })
+
+    it('should unbond verifier deposit', async () => {
+      await incentiveLayer.unbondDeposit(taskID, {from: verifier})
+      assert.equal(1000, (await incentiveLayer.getDeposit.call(verifier)).toNumber())
     })
   })
 })

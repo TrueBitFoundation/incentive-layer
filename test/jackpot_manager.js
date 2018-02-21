@@ -18,7 +18,7 @@ contract('JackpotManager', function(accounts) {
 
       const jackpot = await jackpotManager.getJackpotAmount.call();
       assert.equal(jackpot.toNumber(), 1000);
-    });
+    })
   })
-});
+})
 
