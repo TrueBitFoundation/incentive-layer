@@ -42,7 +42,7 @@ contract('IncentiveLayer', function(accounts) {
     it("should create task", async () => {
       // taskGiver creates a task.
       // they bond part of their deposit.
-      tx = await incentiveLayer.createTask(minDeposit, reward, 0x0, 5, {from: taskGiver})
+      tx = await incentiveLayer.createTask(minDeposit, 0x0, 5, {from: taskGiver, value: reward})
       bond = await incentiveLayer.getBondedDeposit.call(0, taskGiver)
       assert.equal(bond.toNumber(), 500)
       deposit = await incentiveLayer.getDeposit.call(taskGiver)

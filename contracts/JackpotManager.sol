@@ -53,9 +53,10 @@ contract JackpotManager {
       require(j.receivers1[index] == msg.sender);
     }
 
-    uint transferAmount = j.finalAmount.div(j.receivers0.length + j.receivers1.length);
+    uint amount = j.finalAmount.div(j.receivers0.length + j.receivers1.length);
 
     //transfer jackpot payment
+    msg.sender.transfer(amount);
     
   }
 }

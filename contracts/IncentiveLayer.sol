@@ -35,6 +35,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		uint randomBits;
 		uint finalityCode; //0 => not finalized, 1 => finalized, 2 => forced error occurred
 		uint jackpotID;
+		uint initialReward;
 	}
 
 	struct Solution {
@@ -44,6 +45,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		address[] solution0Challengers;
 		address[] solution1Challengers;
 		uint currentChallenger;
+		bool solverConvicted;
 	}
 
 	mapping(uint => Task) private tasks;
@@ -117,18 +119,20 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
   	// @param taskData – tbd. could be hash of the wasm file on a filesystem.
   	// @param numBlocks – the number of blocks to adjust for task difficulty
   	// @return – boolean
-	function createTask(uint minDeposit, uint reward, bytes32 taskData, uint numBlocks) public returns (bool) {
+	function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) public payable returns (bool) {
 		require(deposits[msg.sender] >= minDeposit);
+		require(msg.value > 0);
 		Task storage t = tasks[numTasks];
 		t.owner = msg.sender;
 		t.minDeposit = minDeposit;
-		t.reward = reward;
+		t.reward = msg.value;
 		t.taskData = taskData;
 		t.taskCreationBlockNumber = block.number;
 		t.numBlocks = numBlocks;
+		t.initialReward = t.reward;
 		bondDeposit(numTasks, msg.sender, minDeposit);
 		log0(keccak256(msg.sender));//possible bug if log is after event
-		TaskCreated(numTasks, minDeposit, numBlocks, reward);
+		TaskCreated(numTasks, minDeposit, numBlocks, t.reward);
 		numTasks.add(1);
 		return true;
 	}
@@ -182,7 +186,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		Solution storage s = solutions[taskID];
 		s.solutionHash0 = solutionHash0;
 		s.solutionHash1 = solutionHash1;
-		solutions[taskID] = s;
+		s.solverConvicted = false;
 		t.state = State.SolutionComitted;
 		SolutionsCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
 		return true;
@@ -262,6 +266,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		Task storage t = tasks[taskID];
 		Solution storage s = solutions[taskID];
 		t.jackpotID = setJackpotReceivers(s.solution0Challengers, s.solution1Challengers);
+		t.owner.transfer(t.reward);
 	}
 
 	//verifier should be responsible for calling this first
@@ -270,20 +275,20 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		require(t.state == State.SolutionRevealed);
 		Solution storage s = solutions[taskID];
 		if (s.solution0Correct) {
-			verificationGame(t.selectedSolver, s.solution0Challengers[s.currentChallenger], t.taskData, s.solutionHash0);
+			s.solverConvicted = verificationGame(t.selectedSolver, s.solution0Challengers[s.currentChallenger], t.taskData, s.solutionHash0);
 		} else {
-			verificationGame(t.selectedSolver, s.solution1Challengers[s.currentChallenger], t.taskData, s.solutionHash1);
+			s.solverConvicted = verificationGame(t.selectedSolver, s.solution1Challengers[s.currentChallenger], t.taskData, s.solutionHash1);
 		}
 		s.currentChallenger = s.currentChallenger + 1;
 	}
 
-	function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal {
+	function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal returns (bool) {
 		solver;
 		challenger;
 		taskData;
 		solutionHash;
 		// noop
-		
+		return false;
 	}
 
 	function finalizeTask(uint taskID) public {

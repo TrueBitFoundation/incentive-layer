@@ -21,4 +21,3 @@ contract('JackpotManager', function(accounts) {
     })
   })
 })
-
