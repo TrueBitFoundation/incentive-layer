@@ -6,18 +6,20 @@ const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 contract('JackpotManager', function(accounts) {
   let jackpotManager, oldBalance, newBalance
 
+  const donationAmount = web3.utils.toWei('1', 'ether');
+
   before(async () => {
       jackpotManager = await TestJackpotManager.new()
   })
   
   describe('interact with Test Jackpot Manager', () => {
     it('should donate to the jackpot', async () => {
-      const tx = await jackpotManager.donateToJackpot({from: accounts[1], value: 1000});
+      const tx = await jackpotManager.donateToJackpot({from: accounts[1], value: donationAmount})
       log = tx.logs.find(log => log.event === 'JackpotIncreased')
-      assert.equal(log.args.amount.toNumber(), 1000);
+      assert.equal(log.args.amount.toNumber(), donationAmount)
 
-      const jackpot = await jackpotManager.getJackpotAmount.call();
-      assert.equal(jackpot.toNumber(), 1000);
+      const jackpot = await jackpotManager.getJackpotAmount.call()
+      assert.equal(jackpot.toNumber(), donationAmount)
     })
 
     it('should distribute jackpot', async () => {
@@ -32,22 +34,22 @@ contract('JackpotManager', function(accounts) {
       oldBalance = await web3.eth.getBalance(accounts[0])
       await jackpotManager.receiveJackpotPayment(0, 0, 0, {from: accounts[0]})
       newBalance = await web3.eth.getBalance(accounts[0])
-      assert.notEqual(oldBalance, newBalance)
+      assert(oldBalance < newBalance)
 
       oldBalance = await web3.eth.getBalance(accounts[1])
       await jackpotManager.receiveJackpotPayment(0, 0, 1, {from: accounts[1]})
       newBalance = await web3.eth.getBalance(accounts[1])
-      assert.notEqual(oldBalance, newBalance)
+      assert(oldBalance < newBalance)
 
       oldBalance = await web3.eth.getBalance(accounts[2])
       await jackpotManager.receiveJackpotPayment(0, 1, 0, {from: accounts[2]})
       newBalance = await web3.eth.getBalance(accounts[2])
-      assert.notEqual(oldBalance, newBalance)
+      assert(oldBalance < newBalance)
 
       oldBalance = await web3.eth.getBalance(accounts[3])
       await jackpotManager.receiveJackpotPayment(0, 1, 1, {from: accounts[3]})
       newBalance = await web3.eth.getBalance(accounts[3])
-      assert.notEqual(oldBalance, newBalance)
+      assert(oldBalance < newBalance)
     })
   })
 })

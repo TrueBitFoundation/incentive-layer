@@ -52,11 +52,10 @@ contract JackpotManager {
     } else {
       require(j.receivers1[index] == msg.sender);
     }
-
+    
     uint amount = j.finalAmount.div(j.receivers0.length + j.receivers1.length);
 
     //transfer jackpot payment
     msg.sender.transfer(amount);
-    
   }
 }
