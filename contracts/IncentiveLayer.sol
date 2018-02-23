@@ -16,6 +16,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
+	event VerificationCommitted(address verifier, uint jackpotID, uint solutionID, uint index);
 
 	enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, TaskFinalized, TaskTimeout }
 
@@ -223,15 +224,18 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 	function revealIntent(uint taskID, uint intent) public returns (bool) {
 		require(tasks[taskID].challenges[msg.sender] == keccak256(intent));
 		require(tasks[taskID].state == State.ChallengesAccepted);
+		uint solution = 0;
+		uint position = 0;
 		if (intent == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
+			position = solutions[taskID].solution0Challengers.length;
 			solutions[taskID].solution0Challengers.push(msg.sender);
 		} else if (intent == 1) {
+			position = solutions[taskID].solution1Challengers.length;
 			solutions[taskID].solution1Challengers.push(msg.sender);
-		} else {
-			solutions[taskID].solution0Challengers.push(msg.sender);
-			solutions[taskID].solution1Challengers.push(msg.sender);
+			solution = 1;
 		}
 		delete tasks[taskID].challenges[msg.sender];
+		VerificationCommitted(msg.sender, tasks[taskID].jackpotID, solution, position);
 		return true;
 	}
 
@@ -266,7 +270,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		Task storage t = tasks[taskID];
 		Solution storage s = solutions[taskID];
 		t.jackpotID = setJackpotReceivers(s.solution0Challengers, s.solution1Challengers);
-		t.owner.transfer(t.reward);
+		t.owner.transfer(t.reward);//send reward back to task giver as it was never used
 	}
 
 	//verifier should be responsible for calling this first
@@ -298,10 +302,15 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
 		t.state = State.TaskFinalized;
 		t.finalityCode = 1;//Task has been completed
+		distributeReward(t);
 	}
 
 	function getTaskFinality(uint taskID) public view returns (uint) {
 		return tasks[taskID].finalityCode;
+	}
+
+	function distributeReward(Task t) internal {
+		t.selectedSolver.transfer(t.reward);
 	}
 
 }

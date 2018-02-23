@@ -6,20 +6,21 @@ const timeout = require('./helpers/timeout')
 const mineBlocks = require('./helpers/mineBlocks')
 
 contract('IncentiveLayer', function(accounts) {
-  let incentiveLayer, deposit, bond, tx, log, taskID, intent
+  let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance
 
   const taskGiver = accounts[1]
   const solver = accounts[2]
   const verifier = accounts[3]
 
   const minDeposit = 500
-  const reward = 500
+  const reward = web3.utils.toWei('1', 'ether')
   const randomBits = 12345
 
   context('incentive layer', () => {
 
     before(async () => {
       incentiveLayer = await IncentiveLayer.new()
+      oldBalance = await web3.eth.getBalance(solver)
     })
 
     it("should have participants make deposits", async () => {
@@ -159,6 +160,11 @@ contract('IncentiveLayer', function(accounts) {
     it('should unbond verifier deposit', async () => {
       await incentiveLayer.unbondDeposit(taskID, {from: verifier})
       assert.equal(1000, (await incentiveLayer.getDeposit.call(verifier)).toNumber())
+    })
+
+    it('should be higher than original balance', async () => {
+      const newBalance = await web3.eth.getBalance(solver)
+      assert(oldBalance < newBalance)
     })
   })
 })
