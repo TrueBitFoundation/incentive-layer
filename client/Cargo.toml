@@ -1,0 +1,7 @@
+[package]
+
+name = "incentive-layer-client"
+version = "0.0.1"
+authors = [ "hswick hdswick@gmail.com" ]
+
+[dependencies]
