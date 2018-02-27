@@ -10,8 +10,11 @@ use ethereum_types::{H160};
 
 extern crate web3;
 use web3::contract::{Contract, Options};
+use web3::types::{Address, U256};
 
 use web3::futures::Future;
+
+use std::{thread, time};
 
 fn read_json_file(filename: &str) -> Value {
   let file_path = format!("{}{}", env::current_dir().unwrap().display(), filename);
@@ -38,6 +41,16 @@ fn main() {
   let incentive_layer_abi: &Value = &read_json_file("/../build/contracts/IncentiveLayer.json")["abi"];
 
   let il = serde_json::to_string(&incentive_layer_abi).unwrap();
-  let incentive_layer_contract = Contract::from_json(web3.eth(), incentive_layer_address, il.as_bytes());
-  
+  let incentive_layer_contract = Contract::from_json(web3.eth(), incentive_layer_address, il.as_bytes()).unwrap();
+
+  incentive_layer_contract.call("makeDeposit", (), accounts[1], Options::with(|opt| opt.value = Some(1000.into())));
+
+  let ten_millis = time::Duration::from_millis(2000);
+  thread::sleep(ten_millis);
+
+  let result = incentive_layer_contract.query("getDeposit", (accounts[1], ), None, Options::default(), None);
+  let balance: U256 = result.wait().unwrap();
+
+  println!("{:?}", balance);
+
 }
