@@ -13,7 +13,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
  	event BondedDepositMovedToJackpot(uint taskID, address account, uint amount);
 	event TaskCreated(uint taskID, uint minDeposit, uint blockNumber, uint reward);
 	event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit, bytes32 randomBitsHash);
-	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, address solver);
+	event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, bytes32 solutionHash0, bytes32 solutionHash1);
 	event SolutionRevealed(uint taskID, uint randomBits);
 	event TaskStateChange(uint taskID, uint state);
 	event VerificationCommitted(address verifier, uint jackpotID, uint solutionID, uint index);
@@ -189,7 +189,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 		s.solutionHash1 = solutionHash1;
 		s.solverConvicted = false;
 		t.state = State.SolutionComitted;
-		SolutionsCommitted(taskID, t.minDeposit, t.taskData, msg.sender);
+		SolutionsCommitted(taskID, t.minDeposit, t.taskData, s.solutionHash0, s.solutionHash1);
 		return true;
 	}
 
