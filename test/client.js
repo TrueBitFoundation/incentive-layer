@@ -6,7 +6,7 @@ const mineBlocks = require('./helpers/mineBlocks')
 contract('Incentive Layer Client', function(accounts) {
   let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance
 
-  let taskMonitor
+  let solverMonitor, verifierMonitor
 
   const taskGiver = accounts[1]
   const solver = accounts[2]
@@ -24,7 +24,7 @@ contract('Incentive Layer Client', function(accounts) {
 
     after(async () => {
       console.log("Ending tests")
-      clearInterval(taskMonitor)//kill interval loop
+      clearInterval(solverMonitor)//kill interval loop
     })
 
     it("should have participants make deposits", async () => {
@@ -41,7 +41,11 @@ contract('Incentive Layer Client', function(accounts) {
     })
 
     it("should be monitoring for new tasks", async () => {
-      taskMonitor = await client.monitorTasks({from: solver, gas: 150000})
+      solverMonitor = await client.monitorTasks({from: solver, gas: 150000})
+    })
+
+    it("should be monitoring for solutions", async () => {
+      verifierMonitor = await client.monitorSolutions({from: verifier, gas: 150000})
     })
 
     // it("should commit a solution", async () => {

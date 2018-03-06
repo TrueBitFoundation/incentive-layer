@@ -7,9 +7,8 @@ const incentiveLayer = new web3.eth.Contract(
   JSON.parse(fs.readFileSync(__dirname + '/addresses.json')).incentiveLayer
 )
 
-let clientApi = {
-  incentiveLayer: incentiveLayer,
-  web3: web3,
+module.exports = {
+
   newDeposit: (options) => {
     return new Promise((resolve, reject) => {
       incentiveLayer.methods.makeDeposit().send({from: options.from, value: options.value})
@@ -39,6 +38,7 @@ let clientApi = {
       })
     })
   },
+
   monitorTasks: async (options) => {
     tasks = {}
     solutions = []//this will eventually be in the dispute resolution client
@@ -85,6 +85,7 @@ let clientApi = {
       })
     }, 1000)
   },
+
   monitorSolutions: async (options) => {
     solutions = {}
     const blockNumber = await web3.eth.getBlockNumber()
@@ -94,30 +95,32 @@ let clientApi = {
           //TODO: loop through all results
           const result = result[0].returnValues
 
-          const solution = {
-            taskID: result.taskID,
-            taskData: result.taskData,
-            solutionHash0: result.solutionHash0,
-            solutionHash1: result.solutionHash1
-          }
+          if(!(result.taskID in solutions)) {
 
-          //TODO: figure out intent
-          // - take taskData send to computation-layer, receive result, compare to solutions, choose incorrect solution
-          const intent = 0
-
-          incentiveLayer.methods.commitChallenge(solution.taskID, web3.utils.soliditySha3(intent)).send({from: options.from})
-          .on('confirmation', (err, result) => {
-            console.log("Solution challenged")
-
-            //wait for revealing time
-            new Promise(async (resolve, reject) => {
-              //when revealing time
-              //reveal intent
+            const solution = {
+              taskID: result.taskID,
+              taskData: result.taskData,
+              solutionHash0: result.solutionHash0,
+              solutionHash1: result.solutionHash1
+            }
+  
+            //TODO: figure out intent
+            // - take taskData send to computation-layer, receive result, compare to solutions, choose incorrect solution
+            const intent = 0
+  
+            incentiveLayer.methods.commitChallenge(solution.taskID, web3.utils.soliditySha3(intent)).send({from: options.from})
+            .on('confirmation', (err, result) => {
+              console.log("Solution challenged")
+              solutions.push(solution)
+              new Promise(async (resolve, reject) => {
+                //wait for revealing time
+                //when revealing time
+                //reveal intent
+              })
+            }).on('error', (err, results) => {
+              console.log("Unsuccessfully challenged solution for task: " + solution.taskID)
             })
-          }).on('error', (err, results) => {
-            console.log("Unsuccessfully challenged solution for task: " + solution.taskID)
-          })
-
+          }
 
         } else if(err) {
           //something bad must've happened
@@ -127,5 +130,3 @@ let clientApi = {
     })
   }
 }
-
-module.exports = clientApi
