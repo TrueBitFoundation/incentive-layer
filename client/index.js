@@ -21,6 +21,7 @@ module.exports = {
       })
     })
   },
+
   //creates a new task and returns the taskID
   newTask: (minDeposit, taskData, numBlocks, options) => {
     return new Promise((resolve, reject) => {
@@ -52,22 +53,38 @@ module.exports = {
             tasks[task.taskID] = task
 
             //TODO: check deposit balance to see if have enough for minDeposit
-
+            const randomBits = web3.utils.soliditySha3(Math.floor(Math.random() * 1000000))
             //register for task
-            incentiveLayer.methods.registerForTask(task.taskID, web3.utils.soliditySha3(Math.floor(Math.random() * 1000000))).send(options)
+            incentiveLayer.methods.registerForTask(task.taskID, randomBits).send(options)
             .on('confirmation', (confirmationNumber, receipt) => {
               //solve task (call to truebit node)
               let solution = {
                 solution: web3.utils.soliditySha3(0x0),
                 forcedErrorSolution: web3.utils.soliditySha3(0x12345),
                 taskID: taskID,
-                solver: options.from
+                solver: options.from,
+                randomBits: randomBits
               }
 
               incentiveLayer.commitSolution(solution.taskID, solution.solution, solution.forcedErrorSolution, {from: options.from})
               .on('confirmation', (confirmationNumber, receipt) => {
                 console.log("Solution has been committed to task: " + task.taskID)
                 solutions.push(solution)//this should instead be a call to the dispute resolution layer client
+                
+                //wait for state change to reveal solution
+                new Promise(async (resolve, reject) => {
+                  setInterval(() => {
+                    incentiveLayer.getPastEvents('TaskStateChange', {filter: {taskID: solution.taskID, state: 4}, from: blockNumber, toBlock: 'latest'}, (err, results) => {
+                      if (results) {
+                        //hardcoding true for now
+                        incentiveLayer.methods.revealSolution(solution.taskID, true, solution.randomBits).send({from: options.from})
+                        resolve()
+                      } else if(err) {
+                        reject(Error("State change monitoring in verifier monitor failed " + err))
+                      }
+                    })
+                  }, 1000)
+                })
               })
               .on('error', (confirmationNumber, receipt) => {
                 console.log("Solution was not confirmed")
@@ -90,10 +107,12 @@ module.exports = {
     solutions = {}
     const blockNumber = await web3.eth.getBlockNumber()
     return setInterval(() => {
-      incentiveLayer.getPastEvents('SolutionsCommitted', {from: blockNumber, toBlock: 'latest'}, (err, result) => {
-        if (result) {
+
+      incentiveLayer.getPastEvents('SolutionsCommitted', {from: blockNumber, toBlock: 'latest'}, (err, results) => {
+        if (results && results.length > 0) {
           //TODO: loop through all results
-          const result = result[0].returnValues
+          console.log(results)
+          const result = results[0].returnValues
 
           if(!(result.taskID in solutions)) {
 
@@ -113,9 +132,16 @@ module.exports = {
               console.log("Solution challenged")
               solutions.push(solution)
               new Promise(async (resolve, reject) => {
-                //wait for revealing time
-                //when revealing time
-                //reveal intent
+                setInterval(() => {
+                  incentiveLayer.getPastEvents('TaskStateChange', {filter: {taskID: solution.taskID, state: 3}, from: blockNumber, toBlock: 'latest'}, (err, results) => {
+                    if (results) {
+                      incentiveLayer.methods.revealIntent(solution.taskID, intent).send({from: options.from})
+                      resolve()
+                    } else if(err) {
+                      reject(Error("State change monitoring in verifier monitor failed " + err))
+                    }
+                  })
+                }, 1000)
               })
             }).on('error', (err, results) => {
               console.log("Unsuccessfully challenged solution for task: " + solution.taskID)
@@ -124,9 +150,9 @@ module.exports = {
 
         } else if(err) {
           //something bad must've happened
-          throw("Task monitoring has failed" + err)          
+          throw("Solution monitoring has failed" + err)          
         }
       })
-    })
+    }, 1000)
   }
 }

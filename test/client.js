@@ -2,6 +2,7 @@ const client = require('../client')
 
 const timeout = require('./helpers/timeout')
 const mineBlocks = require('./helpers/mineBlocks')
+const web3 = require('web3')
 
 contract('Incentive Layer Client', function(accounts) {
   let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance
@@ -13,7 +14,7 @@ contract('Incentive Layer Client', function(accounts) {
   const verifier = accounts[3]
 
   const minDeposit = 500
-  const reward = client.web3.utils.toWei('1', 'ether')
+  const reward = web3.utils.toWei('1', 'ether')
   const randomBits = 12345
 
   context('incentive layer client', () => {
@@ -25,6 +26,7 @@ contract('Incentive Layer Client', function(accounts) {
     after(async () => {
       console.log("Ending tests")
       clearInterval(solverMonitor)//kill interval loop
+      clearInterval(verifierMonitor)
     })
 
     it("should have participants make deposits", async () => {
@@ -48,61 +50,14 @@ contract('Incentive Layer Client', function(accounts) {
       verifierMonitor = await client.monitorSolutions({from: verifier, gas: 150000})
     })
 
-    // it("should commit a solution", async () => {
-    //   // solver commits their solutions.
-    //   tx = await incentiveLayer.commitSolution(taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver})
-    //   log = tx.logs.find(log => log.event === 'SolutionsCommitted')
-    //   assert.equal(log.args.taskID.toNumber(), taskID)
-    //   assert.equal(log.args.minDeposit, minDeposit)
-    // })
-
-    // it("should commit a challenge", async () => {
-    //   // verifier commits a challenge
-    //   // they bond part of their deposit.
-    //   intent = 0
-    //   tx = await incentiveLayer.commitChallenge(taskID, web3.utils.soliditySha3(intent), {from: verifier})
-    //   log = tx.logs.find(log => log.event === 'DepositBonded')
-    //   assert.equal(log.args.taskID.toNumber(), taskID)
-    //   assert.equal(log.args.account, verifier)
-    //   assert.equal(log.args.amount, minDeposit)
-    //   deposit = await incentiveLayer.getDeposit.call(verifier)
-    //   assert.equal(deposit.toNumber(), 500)
-
-    //   await mineBlocks(web3, 20)
-
-    //   // taskGiver triggers task state transition
-    //   tx = await incentiveLayer.changeTaskState(taskID, 3, {from: taskGiver})
-    //   log = tx.logs.find(log => log.event === 'TaskStateChange')
-    //   assert.equal(log.args.taskID.toNumber(), taskID);
-    //   assert.equal(log.args.state.toNumber(), 3)
-    // })
-
-    // it("should reveal intent", async () => {
-    //   // state 3: challenges accepted
-    //   // verifier reveals their intent
-    //   await incentiveLayer.revealIntent(taskID, intent, {from: verifier})
-
-    //   await mineBlocks(web3, 10)
-
-    //   // taskGiver triggers task  state transition
-    //   tx = await incentiveLayer.changeTaskState(taskID, 4, {from: taskGiver})
-    //   log = tx.logs.find(log => log.event === 'TaskStateChange')
-    //   assert.equal(log.args.taskID.toNumber(), taskID)
-    //   assert.equal(log.args.state.toNumber(), 4)
-    // })
-
-    // it("should reveal solution", async () => {
-
-    //   // state 4: intents revealed
-    //   tx = await incentiveLayer.revealSolution(taskID, true, randomBits, {from: solver})
-    //   log = tx.logs.find(log => log.event === 'SolutionRevealed')
-    //   if(log) {
-    //     assert.equal(log.args.taskID.toNumber(), taskID)
-    //     assert.equal(log.args.randomBits.toNumber(), randomBits)
-    //   } else {
-    //     assert.equal((await incentiveLayer.getTaskFinality.call(taskID)).toNumber(), 2)
-    //   }
-    // })
+    //TODO::
+    //See incentive_layer for examples
+    // assert commit solution
+    // assert commit challenge
+    // assert change task state 3
+    // assert reveal verifier intent
+    // assert change task state 4
+    // assert solver reveal solution
 
     // it('should run verification game', async () => {
     //   await incentiveLayer.runVerificationGame(taskID, {from: verifier})
