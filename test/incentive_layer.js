@@ -21,6 +21,11 @@ contract('IncentiveLayer', function(accounts) {
     before(async () => {
       incentiveLayer = await IncentiveLayer.new()
       oldBalance = await web3.eth.getBalance(solver)
+
+      //JS seems to mess up with integer overflow when numbers are greater than this
+      if (oldBalance > 99999999999999999999) {
+        web3.eth.sendTransaction({from: solver, to: 0x0, value: web3.utils.toWei('2', 'ether')})
+      }
     })
 
     it("should have participants make deposits", async () => {
@@ -164,7 +169,12 @@ contract('IncentiveLayer', function(accounts) {
 
     it('should be higher than original balance', async () => {
       const newBalance = await web3.eth.getBalance(solver)
-      assert(oldBalance < newBalance)
+
+      console.log("Old balance: " + oldBalance)
+      console.log("New Balance: " + newBalance)
+      const lessThan = oldBalance < newBalance
+      console.log(lessThan)
+      assert(lessThan)
     })
   })
 })
