@@ -9,13 +9,13 @@ This repo hosts the smart contract code related to the Truebit incentive layer. 
 # Install
 This is a truffle codebase (see http://truffleframework.com/docs).
 
-`npm install truffle@v4.0.0-beta.0 -g` to install truffle
+`npm install truffle -g` to install truffle
 
 `npm install` to install needed dependencies locally
 
 In a separate tab on the command line run `ganache-cli`
 
-Then `truffle deploy` to deploy the contracts
+Then `truffle migrate --reset` to deploy the contracts
 
 `truffle test` to run tests
 
@@ -42,7 +42,11 @@ Verifiers can challenge a solution submitted and win jackpots.
 		bytes32 randomBitsHash;
 		uint numBlocks;
 		uint taskCreationBlockNumber;
-    	mapping(address => uint) bondedDeposits;
+    mapping(address => uint) bondedDeposits;
+		uint randomBits;
+		uint finalityCode; //0 => not finalized, 1 => finalized, 2 => forced error occurred
+		uint jackpotID;
+		uint initialReward;
 	}
 ```
 
@@ -61,7 +65,6 @@ A task is identified with an unisgned integer functioning as its ID. In the code
 `challenges`: is a map that relates addresses of verifiers to their intent hash.
 
 `state`: is an enum representing the different states of the task.
--Possible states: TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, VerificationGame
 
 `blockhash`: the hash of the previous block upon registering for a task.
 
@@ -72,6 +75,14 @@ A task is identified with an unisgned integer functioning as its ID. In the code
 `taskCreationBlockNumber`: block number upon creating the task.
 
 `bondedDeposits`: Addresses of people with bonded deposits and amount deposited.
+
+`randomBits`: this is the original random bits that is eventually revealed.
+
+`finalityCode`: this is an encoding to determine the final state of the task
+
+`jackpotID`: the version of the jackpot associated with the task because jackpot versions can change over time.
+
+`initialReward`: this value is stored to compare what amount should be received by a particular user.
 
 ## Posting a deposit
 
@@ -110,9 +121,11 @@ A solver is selected based on who registers for task. This can also be thought o
 incentiveLayer.commitSolution(taskID, web3.utils.soliditySha3(0x0), web3.utils.soliditySha3(0x12345), {from: solver});
 ```
 
+Once the solution is commiteed we enter State 2: SolutionCommitted. It is now possible to post challenges
+
 Notice that two solution hashes are input. This is done because one of the hashes is for a forced error and another is for the real solution. At this point only the Solver is aware which solutionHash is 'correct'.
 
-Now that a solution is committed there is a time period for challenges to be accepted. This is called State 2: Challenge Queue. These challenges will come from verifiers. It is assumed at least one challenge will come from a solver. This also has the effect of bonding the verifier's deposit. Once a given time period ends the task giver will call this function to change the state of the task. Only the task giver (owner of task) is allowed to call this function.
+Now that a solution is committed there is a time period for challenges to be accepted. These challenges will come from verifiers. It is assumed at least one challenge will come from a solver. This also has the effect of bonding the verifier's deposit. Once a given time period ends the task giver will call this function to change the state of the task. Only the task giver (owner of task) is allowed to call this function.
 
 ```javascript
 incentiveLayer.commitChallenge(taskID, minDeposit, intentHash, {from: verifier});
@@ -120,7 +133,7 @@ incentiveLayer.commitChallenge(taskID, minDeposit, intentHash, {from: verifier})
 incentiveLayer.changeTaskState(taskID, 3, {from: task_giver});
 ```
 
-State 3: Reveal Intent - is the time period where the verifiers that have committed challenges reveal which solution they believe is correct. Solution0 or Solution1 by revealing either 0 or 1, anything else is an intent to challenge both solutions. Then after a given time period the task giver changes the state to 4.
+State 3: ChallengesAccepted - is the time period where the verifiers that have committed challenges reveal which solution they believe is correct. Solution0 or Solution1 by revealing either 0 or 1, anything else is an intent to challenge both solutions. Then after a given time period the task giver changes the state to 4.
 
 ```javascript
 incentiveLayer.revealIntent(taskID, 0, {from: verifier});
@@ -128,27 +141,22 @@ incentiveLayer.revealIntent(taskID, 0, {from: verifier});
 incentiveLayer.changeTaskState(taskID, 4, {from: task_giver});
 ```
 
-State 4: Reveal Solution is the state where the solver is allowed to reveal which solution hash is the correct solution hash. This is denoted by submitting a boolean value. true means solutionHash0 is correct, and thus solutionHash1 is incorrect. Submitting false has the opposite effect. This is important because it determines who eventually will participate in the verification game later. The solver also reveals the random number submitted previously which determines whether a forced error is in effect or not.
+State 4: IntentsRevealed is the state where the solver is allowed to reveal which solution hash is the correct solution hash. This is denoted by submitting a boolean value. true means solutionHash0 is correct, and thus solutionHash1 is incorrect. Submitting false has the opposite effect. This is important because it determines who eventually will participate in the verification game later. The solver also reveals the random number submitted previously which determines whether a forced error is in effect or not.
 
 ```javascript
 incentiveLayer.revealSolution(taskID, true, 12345, {from: solver});
 ```
 
-State 5: Verification game
-After the solution is revealed the task giver can initiate the verification game.
+We are now in State 5: SolutionRevealed
+
+After the solution is revealed the task giver can initiate the verification game and then verify the solution.
 
 ```javascript
 incentiveLayer.verifySolution(taskID, 12345, {from: task_giver});
 ```
 
-# Docker
-To run the tests with Docker:
-`docker-machine create dev`
+This will eventually include calls to the dispute resolution layer where the actual verification games will take place.
 
-`eval $(docker-machine env dev)`
+Once the verification games are over the task is finalized and we are in the final stage of the lifecycle of a task State 6: TaskFinalized.
 
-`docker run --name truebit-contracts -ti hswick/truebit-contracts:latest`
-
-`cd truebit-contracts`
-
-`truffle test`
+If for any reason there was a timeout triggered in the intermediate states a task can end up in the TaskTimeout state.
