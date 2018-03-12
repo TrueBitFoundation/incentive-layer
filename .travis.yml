@@ -15,5 +15,6 @@ matrix:
 install: 
   - ganache-cli 2>&1 /dev/null &
 
-script: 
+script:
+  - truffle migrate
   - truffle test
