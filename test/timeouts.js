@@ -28,21 +28,21 @@ contract('IncentiveLayer Timeouts', function(accounts) {
     it('should transfer solvers funds to jackpot', async () => {
       await mineBlocks(web3, 5)
       await incentiveLayer.taskGiverTimeout(taskID, {from: taskGiver})
-      assert.equal(minDeposit, (await incentiveLayer.getDeposit.call(solver)).toNumber())
+      assert((await incentiveLayer.getDeposit.call(solver)).eq(minDeposit))
     })
 
     it('should unbond task giver deposit', async () => {
       tx = await incentiveLayer.unbondDeposit(taskID, {from: taskGiver})
       log = tx.logs.find(log => log.event === 'DepositUnbonded')
-      assert.equal(taskID, log.args.taskID.toNumber())
+      assert(log.args.taskID.eq(taskID))
       assert.equal(taskGiver, log.args.account)
-      assert.equal(minDeposit, log.args.amount.toNumber())
-      assert.equal(minDeposit*2, (await incentiveLayer.getDeposit.call(taskGiver)).toNumber())
+      assert(log.args.amount.eq(minDeposit))
+      assert((await incentiveLayer.getDeposit.call(taskGiver)).eq(minDeposit*2))
     })
 
     it('should unbond solver deposit', async () => {
       await incentiveLayer.unbondDeposit(taskID, {from: solver})
-      assert.equal(minDeposit, (await incentiveLayer.getDeposit.call(solver)).toNumber())
+      assert((await incentiveLayer.getDeposit.call(solver)).eq(minDeposit))
     })
   })
 })

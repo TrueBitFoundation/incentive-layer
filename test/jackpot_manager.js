@@ -10,31 +10,24 @@ contract('JackpotManager', function(accounts) {
 
   before(async () => {
       jackpotManager = await TestJackpotManager.new()
-
-      //JS seems to mess up with integer overflow when numbers are greater than this
-      for(account in [accounts[0], accounts[1], accounts[2]]) {
-        if (oldBalance > 99999999999999999999) {
-          web3.eth.sendTransaction({from: account, to: 0x0, value: web3.utils.toWei('2', 'ether')})
-        }
-      }
   })
-  
+
   describe('interact with Test Jackpot Manager', () => {
     it('should donate to the jackpot', async () => {
       const tx = await jackpotManager.donateToJackpot({from: accounts[1], value: donationAmount})
       log = tx.logs.find(log => log.event === 'JackpotIncreased')
-      assert.equal(log.args.amount.toNumber(), donationAmount)
+      assert(log.args.amount.eq(donationAmount))
 
       const jackpot = await jackpotManager.getJackpotAmount.call()
-      assert.equal(jackpot.toNumber(), donationAmount)
+      assert(jackpot.eq(donationAmount))
     })
 
     it('should distribute jackpot', async () => {
       await jackpotManager.distributeJackpot([accounts[0], accounts[1]], [accounts[2], accounts[3]])
 
-      const jackpotID = (await jackpotManager.getCurrentJackpotID.call()).toNumber()
+      const jackpotID = await jackpotManager.getCurrentJackpotID.call()
 
-      assert.equal(jackpotID, 1)
+      assert(jackpotID.eq(1))
     })
 
     it('should be able to receive payment', async () => {
