@@ -34,7 +34,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     uint taskCreationBlockNumber;
     mapping(address => uint) bondedDeposits;
     uint randomBits;
-    uint finalityCode; //0 => not finalized, 1 => finalized, 2 => forced error occurred
+    uint finalityCode; // 0 => not finalized, 1 => finalized, 2 => forced error occurred
     uint jackpotID;
     uint initialReward;
   }
@@ -52,7 +52,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
   mapping(uint => Task) private tasks;
   mapping(uint => Solution) private solutions;
 
-  uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55];//one timeout per state in the FSM
+  uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55]; // one timeout per state in the FSM
 
   // @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
   // @param taskID - the task id.
@@ -132,7 +132,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     t.numBlocks = numBlocks;
     t.initialReward = t.reward;
     bondDeposit(numTasks, msg.sender, minDeposit);
-    log0(keccak256(msg.sender));//possible bug if log is after event
+    log0(keccak256(msg.sender)); // possible bug if log is after event
     TaskCreated(numTasks, minDeposit, numBlocks, t.reward);
     numTasks.add(1);
     return true;
@@ -152,7 +152,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
   }
 
   // @dev – solver registers for tasks, if first to register than automatically selected solver
-  //  0 -> 1
+  // 0 -> 1
   // @param taskID – the task id.
   // @param randomBitsHash – hash of random bits to commit to task
   // @return – boolean
@@ -174,7 +174,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
   }
 
   // @dev – selected solver submits a solution to the exchange
-  // 1->2
+  // 1 -> 2
   // @param taskID – the task id.
   // @param solutionHash0 – the hash of the solution (could be true or false solution)
   // @param solutionHash1 – the hash of the solution (could be true or false solution)
@@ -226,7 +226,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     require(tasks[taskID].state == State.ChallengesAccepted);
     uint solution = 0;
     uint position = 0;
-    if (intent == 0) {//Intent determines which solution the verifier is betting is deemed incorrect
+    if (intent == 0) { // Intent determines which solution the verifier is betting is deemed incorrect
       position = solutions[taskID].solution0Challengers.length;
       solutions[taskID].solution0Challengers.push(msg.sender);
     } else if (intent == 1) {
@@ -240,7 +240,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
   }
 
   // @dev – solver reveals which solution they say is the correct one
-  // 4->5
+  // 4 -> 5
   // @param taskID – the task id.
   // @param solution0Correct – determines if solution0Hash is the correct solution
   // @param originalRandomBits – original random bits for sake of commitment.
@@ -253,7 +253,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     solutions[taskID].solution0Correct = solution0Correct;
     t.state = State.SolutionRevealed;
     t.randomBits = originalRandomBits;
-    if (isForcedError(originalRandomBits)) { //this if statement will make this function tricky to test
+    if (isForcedError(originalRandomBits)) { // this if statement will make this function tricky to test
       rewardJackpot(taskID);
       t.finalityCode = 2;
       t.state = State.TaskFinalized;
@@ -270,10 +270,10 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     Task storage t = tasks[taskID];
     Solution storage s = solutions[taskID];
     t.jackpotID = setJackpotReceivers(s.solution0Challengers, s.solution1Challengers);
-    t.owner.transfer(t.reward);//send reward back to task giver as it was never used
+    t.owner.transfer(t.reward); // send reward back to task giver as it was never used
   }
 
-  //verifier should be responsible for calling this first
+  // verifier should be responsible for calling this first
   function runVerificationGame(uint taskID) public {
     Task storage t = tasks[taskID];
     require(t.state == State.SolutionRevealed);
@@ -301,7 +301,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     require(t.owner == msg.sender);
     require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
     t.state = State.TaskFinalized;
-    t.finalityCode = 1;//Task has been completed
+    t.finalityCode = 1; // Task has been completed
     distributeReward(t);
   }
 
