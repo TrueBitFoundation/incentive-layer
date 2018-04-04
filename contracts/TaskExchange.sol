@@ -6,7 +6,6 @@ import "./IDisputeResolutionLayer.sol";
 contract TaskExchange is DepositsManager {
 
     uint private numTasks = 0;
-    uint private forcedErrorThreshold = 42;
 
     event DepositBonded(uint taskID, address account, uint amount);
     event DepositUnbonded(uint taskID, address account, uint amount);
@@ -63,7 +62,7 @@ contract TaskExchange is DepositsManager {
     // @return – the user's deposit which was unbonded from the task.
     function unbondDeposit(uint taskID) public returns (uint) {
         Task storage task = tasks[taskID];
-        require(block.number.sub(task.taskCreationBlockNumber) >= task.intervals[2] || task.state == State.Timeout);
+        //require(block.number.sub(task.taskCreationBlockNumber) >= task.intervals[2] || task.state == State.Timeout);
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
         deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
@@ -158,7 +157,6 @@ contract TaskExchange is DepositsManager {
         bondDeposit(taskID, msg.sender, t.minDeposit);
         t.currentChallenger = msg.sender;
         t.state = State.Verify;
-        bytes32 gameId = t.disputeRes.newGame(t.selectedSolver, t.currentChallenger, t.numSteps);//this is for the dummy
         VerificationCommitted(taskID);
         return true;
     }

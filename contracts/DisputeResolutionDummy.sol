@@ -14,15 +14,15 @@ contract DisputeResolutionLayerDummy is IDisputeResolutionLayer {
     mapping(bytes32 => Game) private games;
 
     function newGame(address solver, address verifier, uint numSteps) public returns (bytes32 gameId) {
-        // gameId = keccak256(solver, verifier, numSteps);
-        // Game storage g = games[gameId];
-        // g.solver = solver;
-        // g.verifier = verifier;
-        // g.numSteps = numSteps;
-        // g.status = 1;// Solver has already won
+        gameId = keccak256(solver, verifier, numSteps);
+        Game storage g = games[gameId];
+        g.solver = solver;
+        g.verifier = verifier;
+        g.numSteps = numSteps;
+        g.status = 1;// Solver has already won
     }
 
-    function status(bytes32 gameId) public returns (uint) {
+    function status(bytes32 gameId) public view returns (uint) {
         return games[gameId].status;
     }
 }

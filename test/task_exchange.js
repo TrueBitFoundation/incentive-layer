@@ -22,6 +22,7 @@ contract('TaskExchange', function(accounts) {
     before(async () => {
       taskExchange = await TaskExchange.new()
       oldBalance = await web3.eth.getBalance(solver)
+      disputeRes = await DisputeResolutionLayerDummy.at(DisputeResolutionLayerDummy.address)
     })
 
     it("should have participants make deposits", async () => {
@@ -103,13 +104,19 @@ contract('TaskExchange', function(accounts) {
 
     })
 
+    it("should create a new game on dispute res", async () => {
+      tx = await disputeRes.newGame(solver, verifier, 9, {from: verifier})
+
+      console.log((await disputeRes.status.call(web3.utils.soliditySha3(solver, verifier, 9))).toNumber())
+    })
+
     it("should convict verifier", async () => {
       await taskExchange.convictVerifier(taskID, web3.utils.soliditySha3(solver, verifier, 9), {from: solver})
     })
 
     it('should unbond solver deposit', async () => {
       await taskExchange.unbondDeposit(taskID, {from: solver})
-      assert((await taskExchange.getDeposit.call(solver)).eq(1000))
+      assert((await taskExchange.getDeposit.call(solver)).eq(1500))
     })
 
     it('should unbond task giver deposit', async () => {
