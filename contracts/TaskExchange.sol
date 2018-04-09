@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.19;
 
 import "./DepositsManager.sol";
 import "./IDisputeResolutionLayer.sol";
@@ -12,7 +12,7 @@ contract TaskExchange is DepositsManager {
     event TaskCreated(uint taskID, uint minDeposit);
     event SolverSelected(uint indexed taskID, address solver, uint minDeposit);
     event SolutionCommitted(uint taskID, uint minDeposit, bytes32 solutionHash);
-    event VerificationCommitted(uint taskID);
+    event VerificationCommitted(uint taskID, bytes32 gameId);
 
     enum State { Register, Solve, Solved, Verify, Timeout }
 
@@ -25,6 +25,7 @@ contract TaskExchange is DepositsManager {
         uint taskCreationBlockNumber;
         mapping(address => uint) bondedDeposits;
         address currentChallenger;
+        bytes32 currentGame;
         bytes32 solutionHash;
         uint[3] intervals;
         IDisputeResolutionLayer disputeRes;
@@ -157,13 +158,15 @@ contract TaskExchange is DepositsManager {
         bondDeposit(taskID, msg.sender, t.minDeposit);
         t.currentChallenger = msg.sender;
         t.state = State.Verify;
-        VerificationCommitted(taskID);
+        t.currentGame = t.disputeRes.newGame(t.selectedSolver, msg.sender, t.numSteps);
+        VerificationCommitted(taskID, t.currentGame);
         return true;
     }
 
     function convictSolver(uint taskID, bytes32 gameId) public {
         Task storage t = tasks[taskID];
-        require(t.disputeRes.status(gameId) == 2);
+        uint status = t.disputeRes.status(t.currentGame);
+        require(status == 2);
         uint solverAmount = t.bondedDeposits[t.selectedSolver];
         t.bondedDeposits[t.selectedSolver] = t.bondedDeposits[t.selectedSolver].sub(solverAmount);
         t.bondedDeposits[t.currentChallenger] = t.bondedDeposits[t.currentChallenger].add(solverAmount);
@@ -172,7 +175,8 @@ contract TaskExchange is DepositsManager {
 
     function convictVerifier(uint taskID, bytes32 gameId) public {
         Task storage t = tasks[taskID];
-        require(t.disputeRes.status(gameId) == 1);
+        uint status = t.disputeRes.status(t.currentGame);
+        require(status == 1);
         uint verifierAmount = t.bondedDeposits[t.currentChallenger];
         t.bondedDeposits[t.currentChallenger] = t.bondedDeposits[t.currentChallenger].sub(verifierAmount);
         t.bondedDeposits[t.selectedSolver] = t.bondedDeposits[t.selectedSolver].add(verifierAmount);
