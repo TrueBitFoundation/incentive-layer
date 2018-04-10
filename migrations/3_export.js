@@ -1,10 +1,11 @@
 const fs = require('fs')
 const IncentiveLayer = artifacts.require("./IncentiveLayer.sol")
+const TaskExchange = artifacts.require("./TaskExchange.sol")
 
 module.exports = (deployer, network) => {
   let exportedContracts = {}
 
-  let contracts = [IncentiveLayer]
+  let contracts = [TaskExchange]
 
   contracts.forEach((contract) => {
 
