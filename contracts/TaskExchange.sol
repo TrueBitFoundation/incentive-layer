@@ -32,7 +32,7 @@ contract TaskExchange is DepositsManager {
         uint numSteps;
     }
 
-    function getTaskData(uint taskID) public pure returns(bytes taskData, uint numSteps, uint state, uint[3] intervals) {
+    function getTaskData(uint taskID) public view returns(bytes taskData, uint numSteps, uint state, uint[3] intervals) {
         Task storage t = tasks[taskID];
         return (t.taskData, t.numSteps, uint(t.state), t.intervals);
     }
