@@ -105,7 +105,7 @@ contract TaskExchange is DepositsManager {
         bondDeposit(numTasks, msg.sender, minDeposit);
         log0(keccak256(msg.sender)); // possible bug if log is after event
         TaskCreated(numTasks, minDeposit);
-        numTasks.add(1);
+        numTasks = numTasks.add(1);
         return true;
     }
 
