@@ -32,6 +32,11 @@ contract TaskExchange is DepositsManager {
         uint numSteps;
     }
 
+    function getTaskData(uint taskID) public pure returns(bytes taskData, uint numSteps, uint state, uint[3] intervals) {
+        Task storage t = tasks[taskID];
+        return (t.taskData, t.numSteps, uint(t.state), t.intervals);
+    }
+
     mapping(uint => Task) private tasks;
 
     // @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
