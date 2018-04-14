@@ -11,7 +11,7 @@ contract TaskExchange is DepositsManager {
     event DepositUnbonded(uint taskID, address account, uint amount);
     event TaskCreated(uint taskID, uint minDeposit);
     event SolverSelected(uint indexed taskID, address solver, uint minDeposit);
-    event SolutionCommitted(uint taskID, uint minDeposit, bytes32 solutionHash);
+    event SolutionCommitted(uint taskID, uint minDeposit, bytes32 solution);
     event VerificationCommitted(uint taskID, bytes32 gameId);
 
     enum State { Register, Solve, Solved, Verify, Timeout }
@@ -26,10 +26,14 @@ contract TaskExchange is DepositsManager {
         mapping(address => uint) bondedDeposits;
         address currentChallenger;
         bytes32 currentGame;
-        bytes32 solutionHash;
+        bytes32 solution;
         uint[3] intervals;
         IDisputeResolutionLayer disputeRes;
         uint numSteps;
+    }
+
+    function getSolution(uint taskID) public view returns(bytes32 solution) {
+        return solution;
     }
 
     function getTaskData(uint taskID) public view returns(bytes taskData, uint numSteps, uint state, uint[3] intervals) {
@@ -129,24 +133,24 @@ contract TaskExchange is DepositsManager {
 
     // @dev – selected solver submits a solution to the exchange
     // @param taskID – the task id.
-    // @param solutionHash – the hash of the solution
+    // @param solution - the submitted solution
     // @return – boolean
-    function commitSolution(uint taskID, bytes32 solutionHash) public returns (bool) {
+    function commitSolution(uint taskID, bytes32 solution) public returns (bool) {
         Task storage t = tasks[taskID];
         require(t.selectedSolver == msg.sender);
         require(t.state == State.Solve);
         require(block.number < t.taskCreationBlockNumber.add(t.intervals[uint(t.state)]));
 
-        t.solutionHash = solutionHash;
+        t.solution = solution;
         t.state = State.Solved;
-        SolutionCommitted(taskID, t.minDeposit, t.solutionHash);
+        SolutionCommitted(taskID, t.minDeposit, t.solution);
         return true;
     }
 
     function taskGiverTimeout(uint taskID) public {
         Task storage t = tasks[taskID];
         require(msg.sender == t.owner);
-        require(t.solutionHash == 0x0);
+        require(t.solution == 0x0);
         require(block.number > t.taskCreationBlockNumber.add(t.intervals[0]));
         t.state = State.Timeout;
     }
