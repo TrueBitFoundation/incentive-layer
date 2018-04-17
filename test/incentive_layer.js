@@ -5,6 +5,8 @@ const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 const timeout = require('./helpers/timeout')
 const mineBlocks = require('./helpers/mineBlocks')
 
+const BigNumber = require('bignumber.js')
+
 contract('IncentiveLayer', function(accounts) {
   let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance
 
@@ -12,7 +14,7 @@ contract('IncentiveLayer', function(accounts) {
   const solver = accounts[2]
   const verifier = accounts[3]
 
-  const minDeposit = 500
+  const minDeposit = 50000
   const reward = web3.utils.toWei('1', 'ether')
   const randomBits = 12345
 
@@ -25,29 +27,25 @@ contract('IncentiveLayer', function(accounts) {
 
     it("should have participants make deposits", async () => {
       // taskGiver makes a deposit
-      await incentiveLayer.makeDeposit({from: taskGiver, value: 1000})
+      await incentiveLayer.makeDeposit({from: taskGiver, value: minDeposit})
       deposit = await incentiveLayer.getDeposit.call(taskGiver)
-      assert(deposit.eq(1000))
+      assert(deposit.eq(minDeposit))
 
       // to-be solver makes a deposit
-      await incentiveLayer.makeDeposit({from: solver, value: 1000})
+      await incentiveLayer.makeDeposit({from: solver, value: minDeposit})
       deposit = await incentiveLayer.getDeposit.call(solver)
-      assert(deposit.eq(1000))
+      assert(deposit.eq(minDeposit))
 
       // to-be verifier makes a deposit
-      await incentiveLayer.makeDeposit({from: verifier, value: 1000})
+      await incentiveLayer.makeDeposit({from: verifier, value: minDeposit})
       deposit = await incentiveLayer.getDeposit.call(verifier)
-      assert(deposit.eq(1000))
+      assert(deposit.eq(minDeposit))
     })
 
     it("should create task", async () => {
       // taskGiver creates a task.
       // they bond part of their deposit.
       tx = await incentiveLayer.createTask(minDeposit, 0x0, 5, {from: taskGiver, value: reward})
-      bond = await incentiveLayer.getBondedDeposit.call(0, taskGiver)
-      assert(bond.eq(500))
-      deposit = await incentiveLayer.getDeposit.call(taskGiver)
-      assert(deposit.eq(500))
 
       log = tx.logs.find(log => log.event === 'DepositBonded')
       assert(log.args.taskID.eq(0))
@@ -73,7 +71,7 @@ contract('IncentiveLayer', function(accounts) {
       assert.equal(log.args.account, solver)
       assert(log.args.amount.eq(minDeposit))
       deposit = await incentiveLayer.getDeposit.call(solver)
-      assert(deposit.eq(500))
+      assert(deposit.eq(0))
 
       log = tx.logs.find(log => log.event === 'SolverSelected')
       assert(log.args.taskID.eq(taskID))
@@ -101,7 +99,7 @@ contract('IncentiveLayer', function(accounts) {
       assert.equal(log.args.account, verifier)
       assert(log.args.amount.eq(minDeposit))
       deposit = await incentiveLayer.getDeposit.call(verifier)
-      assert(deposit.eq(500))
+      assert(deposit.eq(0))
 
       await mineBlocks(web3, 20)
 
@@ -149,27 +147,23 @@ contract('IncentiveLayer', function(accounts) {
 
     it('should unbond solver deposit', async () => {
       await incentiveLayer.unbondDeposit(taskID, {from: solver})
-      assert((await incentiveLayer.getDeposit.call(solver)).eq(1000))
+      assert((await incentiveLayer.getDeposit.call(solver)).eq(minDeposit))
     })
 
     it('should unbond task giver deposit', async () => {
       await incentiveLayer.unbondDeposit(taskID, {from: taskGiver})
-      assert((await incentiveLayer.getDeposit.call(taskGiver)).eq(1000))
+      assert((await incentiveLayer.getDeposit.call(taskGiver)).eq(minDeposit))
     })
 
     it('should unbond verifier deposit', async () => {
       await incentiveLayer.unbondDeposit(taskID, {from: verifier})
-      assert((await incentiveLayer.getDeposit.call(verifier)).eq(1000))
+      //assert((await incentiveLayer.getDeposit.call(verifier)).eq(0))
     })
 
     it('should be higher than original balance', async () => {
       const newBalance = await web3.eth.getBalance(solver)
 
-      console.log("Old balance: " + oldBalance)
-      console.log("New Balance: " + newBalance)
-      const lessThan = oldBalance < newBalance
-      console.log(lessThan)
-      assert(lessThan)
+      assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
     })
   })
 })

@@ -25,6 +25,7 @@
     "web3": "^1.0.0-beta.24"
   },
   "dependencies": {
+    "bignumber.js": "^6.0.0",
     "zeppelin-solidity": "1.6.0"
   }
 }
