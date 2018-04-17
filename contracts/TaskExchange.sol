@@ -52,6 +52,14 @@ contract TaskExchange is DepositsManager {
         return block.number.sub(t.taskCreationBlockNumber) >= t.intervals[uint(t.state)];
     }
 
+    function timeout(uint taskID) public {
+        Task storage t = tasks[taskID];
+        require(msg.sender == t.owner);
+        require(t.solution == 0x0);
+        require(stateChangeTimeoutReached(taskID));
+        t.state = State.Timeout;
+    }
+
     // @dev – locks up part of the a user's deposit into a task.
     // @param taskID – the task id.
     // @param account – the user's address.
@@ -72,7 +80,7 @@ contract TaskExchange is DepositsManager {
     // @return – the user's deposit which was unbonded from the task.
     function unbondDeposit(uint taskID) public returns (uint) {
         Task storage task = tasks[taskID];
-        //require(block.number.sub(task.taskCreationBlockNumber) >= task.intervals[2] || task.state == State.Timeout);
+        require(block.number.sub(task.taskCreationBlockNumber) >= task.intervals[2] || task.state == State.Timeout);
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
         deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
@@ -145,14 +153,6 @@ contract TaskExchange is DepositsManager {
         t.state = State.Solved;
         SolutionCommitted(taskID, t.minDeposit, t.solution);
         return true;
-    }
-
-    function taskGiverTimeout(uint taskID) public {
-        Task storage t = tasks[taskID];
-        require(msg.sender == t.owner);
-        require(t.solution == 0x0);
-        require(block.number > t.taskCreationBlockNumber.add(t.intervals[0]));
-        t.state = State.Timeout;
     }
 
     // @dev – verifier submits a challenge to the solution provided for a task
