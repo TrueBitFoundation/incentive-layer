@@ -6,6 +6,8 @@ const DisputeResolutionLayerDummy = artifacts.require('./DisputeResolutionLayerD
 const timeout = require('./helpers/timeout')
 const mineBlocks = require('./helpers/mineBlocks')
 
+const BigNumber = require('bignumber.js')
+
 contract('TaskExchange', function(accounts) {
   let taskExchange, deposit, bond, tx, log, taskID, intent, oldBalance
 
@@ -107,7 +109,7 @@ contract('TaskExchange', function(accounts) {
     it("should create a new game on dispute res", async () => {
       tx = await disputeRes.newGame(solver, verifier, 9, {from: verifier})
 
-      assert((await disputeRes.status.call(web3.utils.soliditySha3(solver, verifier, 9))).eq(1))
+      assert((await disputeRes.status.call(web3.utils.soliditySha3(solver, verifier, 9))).eq(2))
 
     })
 
@@ -115,7 +117,14 @@ contract('TaskExchange', function(accounts) {
       tx = await taskExchange.convictVerifier(taskID, web3.utils.soliditySha3(solver, verifier, 9), {from: solver})
     })
 
+    it("should finalize task", async () => {
+      await mineBlocks(web3, 65)
+
+      await taskExchange.finalizeTask(taskID, {from: solver})
+    })
+
     it('should unbond solver deposit', async () => {
+
       await taskExchange.unbondDeposit(taskID, {from: solver})
       assert((await taskExchange.getDeposit.call(solver)).eq(1500))
     })
@@ -126,14 +135,13 @@ contract('TaskExchange', function(accounts) {
     })
 
     //Uncomment out after making deposit amounts larger
-    // it('should be higher than original balance', async () => {
-    //   const newBalance = await web3.eth.getBalance(solver)
+    it('should be higher than original balance', async () => {
+      const newBalance = await web3.eth.getBalance(solver)
 
-    //   console.log("Old balance: " + oldBalance)
-    //   console.log("New Balance: " + newBalance)
-    //   const lessThan = oldBalance < newBalance
-    //   console.log(lessThan)
-    //   assert(lessThan)
-    // })
+      console.log("Old balance: " + oldBalance)
+      console.log("New Balance: " + newBalance)
+
+      assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
+    })
   })
 })

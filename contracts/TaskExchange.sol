@@ -20,6 +20,7 @@ contract TaskExchange is DepositsManager {
         address owner;
         address selectedSolver;
         uint minDeposit;
+        uint reward;
         bytes taskData;
         State state;
         uint taskCreationBlockNumber;
@@ -30,6 +31,7 @@ contract TaskExchange is DepositsManager {
         uint[3] intervals;
         IDisputeResolutionLayer disputeRes;
         uint numSteps;
+        bool finalized;
     }
 
     function getSolution(uint taskID) public view returns(bytes32 solution) {
@@ -109,6 +111,7 @@ contract TaskExchange is DepositsManager {
         Task storage t = tasks[numTasks];
         t.owner = msg.sender;
         t.minDeposit = minDeposit;
+        t.reward = msg.value;
         t.taskData = taskData;
         t.taskCreationBlockNumber = block.number;
         t.intervals = intervals;
@@ -175,7 +178,7 @@ contract TaskExchange is DepositsManager {
     function convictSolver(uint taskID, bytes32 gameId) public {
         Task storage t = tasks[taskID];
         uint status = t.disputeRes.status(t.currentGame);
-        require(status == 2);
+        require(status == 3);
         uint solverAmount = t.bondedDeposits[t.selectedSolver];
         t.bondedDeposits[t.selectedSolver] = t.bondedDeposits[t.selectedSolver].sub(solverAmount);
         t.bondedDeposits[t.currentChallenger] = t.bondedDeposits[t.currentChallenger].add(solverAmount);
@@ -185,11 +188,29 @@ contract TaskExchange is DepositsManager {
     function convictVerifier(uint taskID, bytes32 gameId) public {
         Task storage t = tasks[taskID];
         uint status = t.disputeRes.status(t.currentGame);
-        require(status == 1);
+        require(status == 2);
         uint verifierAmount = t.bondedDeposits[t.currentChallenger];
         t.bondedDeposits[t.currentChallenger] = t.bondedDeposits[t.currentChallenger].sub(verifierAmount);
         t.bondedDeposits[t.selectedSolver] = t.bondedDeposits[t.selectedSolver].add(verifierAmount);
         t.state = State.Solved;
+    }
+
+    function finalizeTask(uint taskID) public {
+        Task storage t = tasks[taskID];
+        require(block.number.sub(t.taskCreationBlockNumber) >= t.intervals[2]);
+        uint status = t.disputeRes.status(t.currentGame);
+        //Game never started or Solver won
+        require(status == 0 || status == 2);
+        t.finalized = true; // Task has been completed
+        distributeReward(t);
+    }
+
+    function getTaskFinality(uint taskID) public view returns (bool) {
+        return tasks[taskID].finalized;
+    }
+
+    function distributeReward(Task t) internal {
+        t.selectedSolver.transfer(t.reward);
     }
 
 }

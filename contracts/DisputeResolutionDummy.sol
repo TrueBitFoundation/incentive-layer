@@ -4,6 +4,12 @@ import "./IDisputeResolutionLayer.sol";
 
 contract DisputeResolutionLayerDummy is IDisputeResolutionLayer {
 
+    //status codes:
+    //0 => game hasn't occurred
+    //1 => game is in progress
+    //2 => solver won
+    //3 => verifier won
+
     struct Game {
         address solver;
         address verifier;
@@ -19,7 +25,7 @@ contract DisputeResolutionLayerDummy is IDisputeResolutionLayer {
         g.solver = solver;
         g.verifier = verifier;
         g.numSteps = numSteps;
-        g.status = 1;// Solver has already won
+        g.status = 2;// Solver has already won
     }
 
     function status(bytes32 gameId) public view returns (uint) {

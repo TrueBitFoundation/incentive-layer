@@ -3,6 +3,8 @@ const TestJackpotManager = artifacts.require('TestJackpotManager.sol');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
+const BigNumber = require('bignumber.js')
+
 contract('JackpotManager', function(accounts) {
   let jackpotManager, oldBalance, newBalance
 
@@ -49,7 +51,8 @@ contract('JackpotManager', function(accounts) {
       oldBalance = await web3.eth.getBalance(accounts[3])
       await jackpotManager.receiveJackpotPayment(0, 1, 1, {from: accounts[3]})
       newBalance = await web3.eth.getBalance(accounts[3])
-      assert(oldBalance < newBalance)
+      
+      assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
     })
   })
 })
