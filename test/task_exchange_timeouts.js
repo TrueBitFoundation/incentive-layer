@@ -220,6 +220,8 @@ contract('TaskExchange timeouts', function(accounts) {
     it('should unbond deposit with solution committed selected', async () => {
       await mineBlocks(web3, 65)
 
+      await taskExchange.finalizeTask(taskID, {from: solver})
+
       await taskExchange.unbondDeposit(taskID, {from: taskGiver})
     })
   })

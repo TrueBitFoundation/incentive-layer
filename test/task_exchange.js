@@ -102,8 +102,6 @@ contract('TaskExchange', function(accounts) {
       assert(log.args.amount.eq(minDeposit))
       deposit = await taskExchange.getDeposit.call(verifier)
       assert(deposit.eq(500))
-
-
     })
 
     it("should create a new game on dispute res", async () => {

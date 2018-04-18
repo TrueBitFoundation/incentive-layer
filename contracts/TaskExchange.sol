@@ -34,8 +34,9 @@ contract TaskExchange is DepositsManager {
         bool finalized;
     }
 
-    function getSolution(uint taskID) public view returns(bytes32 solution) {
-        return solution;
+    function getSolution(uint taskID) public view returns(bytes32 solution, bool finalized) {
+        Task storage t = tasks[taskID];
+        return (t.solution, t.finalized);
     }
 
     function getTaskData(uint taskID) public view returns(bytes taskData, uint numSteps, uint state, uint[3] intervals) {
@@ -82,7 +83,7 @@ contract TaskExchange is DepositsManager {
     // @return – the user's deposit which was unbonded from the task.
     function unbondDeposit(uint taskID) public returns (uint) {
         Task storage task = tasks[taskID];
-        require(block.number.sub(task.taskCreationBlockNumber) >= task.intervals[2] || task.state == State.Timeout);
+        require(task.finalized || task.state == State.Timeout);
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
         deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
