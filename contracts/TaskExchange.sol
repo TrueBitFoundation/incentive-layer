@@ -39,9 +39,9 @@ contract TaskExchange is DepositsManager {
         return (t.solution, t.finalized);
     }
 
-    function getTaskData(uint taskID) public view returns(bytes taskData, uint numSteps, uint state, uint[3] intervals) {
+    function getTaskData(uint taskID) public view returns(bytes taskData, uint numSteps, uint state, uint[3] intervals, uint taskCreationBlockNumber) {
         Task storage t = tasks[taskID];
-        return (t.taskData, t.numSteps, uint(t.state), t.intervals);
+        return (t.taskData, t.numSteps, uint(t.state), t.intervals, t.taskCreationBlockNumber);
     }
 
     mapping(uint => Task) private tasks;
