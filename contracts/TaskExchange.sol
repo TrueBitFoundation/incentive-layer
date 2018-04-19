@@ -9,7 +9,7 @@ contract TaskExchange is DepositsManager {
 
     event DepositBonded(uint taskID, address account, uint amount);
     event DepositUnbonded(uint taskID, address account, uint amount);
-    event TaskCreated(uint taskID, uint minDeposit);
+    event TaskCreated(uint taskID, uint minDeposit, address creator);
     event SolverSelected(uint indexed taskID, address solver, uint minDeposit);
     event SolutionCommitted(uint taskID, uint minDeposit, bytes32 solution);
     event VerificationCommitted(uint taskID, bytes32 gameId);
@@ -120,7 +120,7 @@ contract TaskExchange is DepositsManager {
         t.numSteps = numSteps;
         bondDeposit(numTasks, msg.sender, minDeposit);
         log0(keccak256(msg.sender)); // possible bug if log is after event
-        TaskCreated(numTasks, minDeposit);
+        TaskCreated(numTasks, minDeposit, msg.sender);
         numTasks = numTasks.add(1);
         return true;
     }
