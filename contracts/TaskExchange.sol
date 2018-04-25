@@ -171,7 +171,7 @@ contract TaskExchange is DepositsManager {
         bondDeposit(taskID, msg.sender, t.minDeposit);
         t.currentChallenger = msg.sender;
         t.state = State.Verify;
-        t.currentGame = t.disputeRes.newGame(t.selectedSolver, msg.sender, t.numSteps);
+        t.currentGame = t.disputeRes.commitChallenge(t.selectedSolver, msg.sender);
         VerificationCommitted(taskID, t.currentGame);
         return true;
     }
@@ -179,7 +179,7 @@ contract TaskExchange is DepositsManager {
     function convictSolver(uint taskID, bytes32 gameId) public {
         Task storage t = tasks[taskID];
         uint status = t.disputeRes.status(t.currentGame);
-        require(status == 3);
+        require(status == 4);//Verifier won
         uint solverAmount = t.bondedDeposits[t.selectedSolver];
         t.bondedDeposits[t.selectedSolver] = t.bondedDeposits[t.selectedSolver].sub(solverAmount);
         t.bondedDeposits[t.currentChallenger] = t.bondedDeposits[t.currentChallenger].add(solverAmount);
@@ -189,7 +189,7 @@ contract TaskExchange is DepositsManager {
     function convictVerifier(uint taskID, bytes32 gameId) public {
         Task storage t = tasks[taskID];
         uint status = t.disputeRes.status(t.currentGame);
-        require(status == 2);
+        require(status == 3);//Solver won
         uint verifierAmount = t.bondedDeposits[t.currentChallenger];
         t.bondedDeposits[t.currentChallenger] = t.bondedDeposits[t.currentChallenger].sub(verifierAmount);
         t.bondedDeposits[t.selectedSolver] = t.bondedDeposits[t.selectedSolver].add(verifierAmount);
@@ -201,7 +201,7 @@ contract TaskExchange is DepositsManager {
         require(block.number.sub(t.taskCreationBlockNumber) >= t.intervals[2]);
         uint status = t.disputeRes.status(t.currentGame);
         //Game never started or Solver won
-        require(status == 0 || status == 2);
+        require(status == 0 || status == 3);
         t.finalized = true; // Task has been completed
         distributeReward(t);
     }

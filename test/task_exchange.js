@@ -104,13 +104,6 @@ contract('TaskExchange', function(accounts) {
       assert(deposit.eq(500))
     })
 
-    it("should create a new game on dispute res", async () => {
-      tx = await disputeRes.newGame(solver, verifier, 9, {from: verifier})
-
-      assert((await disputeRes.status.call(web3.utils.soliditySha3(solver, verifier, 9))).eq(2))
-
-    })
-
     it("should convict verifier", async () => {
       tx = await taskExchange.convictVerifier(taskID, web3.utils.soliditySha3(solver, verifier, 9), {from: solver})
     })
