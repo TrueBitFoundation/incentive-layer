@@ -171,7 +171,9 @@ contract TaskExchange is DepositsManager {
         bondDeposit(taskID, msg.sender, t.minDeposit);
         t.currentChallenger = msg.sender;
         t.state = State.Verify;
-        t.currentGame = t.disputeRes.commitChallenge(t.selectedSolver, msg.sender);
+
+        //Spec variable is just hash of data used to initialize new game
+        t.currentGame = t.disputeRes.commitChallenge(t.selectedSolver, msg.sender, keccak256(t.taskData, t.solution, t.minDeposit));
         VerificationCommitted(taskID, t.currentGame);
         return true;
     }

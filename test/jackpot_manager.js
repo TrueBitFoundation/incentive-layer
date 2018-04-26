@@ -36,17 +36,17 @@ contract('JackpotManager', function(accounts) {
       oldBalance = await web3.eth.getBalance(accounts[0])
       await jackpotManager.receiveJackpotPayment(0, 0, 0, {from: accounts[0]})
       newBalance = await web3.eth.getBalance(accounts[0])
-      assert(oldBalance < newBalance)
+      assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
 
       oldBalance = await web3.eth.getBalance(accounts[1])
       await jackpotManager.receiveJackpotPayment(0, 0, 1, {from: accounts[1]})
       newBalance = await web3.eth.getBalance(accounts[1])
-      assert(oldBalance < newBalance)
+      assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
 
       oldBalance = await web3.eth.getBalance(accounts[2])
       await jackpotManager.receiveJackpotPayment(0, 1, 0, {from: accounts[2]})
       newBalance = await web3.eth.getBalance(accounts[2])
-      assert(oldBalance < newBalance)
+      assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
 
       oldBalance = await web3.eth.getBalance(accounts[3])
       await jackpotManager.receiveJackpotPayment(0, 1, 1, {from: accounts[3]})

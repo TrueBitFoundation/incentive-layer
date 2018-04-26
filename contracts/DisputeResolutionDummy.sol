@@ -14,8 +14,8 @@ contract DisputeResolutionLayerDummy is IDisputeResolutionLayer {
 
     mapping(bytes32 => Game) private games;
 
-    function commitChallenge(address solver, address verifier) public returns (bytes32 gameId) {
-        gameId = keccak256(solver, verifier);
+    function commitChallenge(address solver, address verifier, bytes32 spec) public returns (bytes32 gameId) {
+        gameId = keccak256(solver, verifier, spec);
         Game storage g = games[gameId];
         g.solver = solver;
         g.verifier = verifier;
