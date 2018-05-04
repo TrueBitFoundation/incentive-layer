@@ -21,11 +21,11 @@ contract JackpotManager {
 
     // @dev – returns the current jackpot
     // @return – the jackpot.
-    function getJackpotAmount() constant public returns (uint) {
+    function getJackpotAmount() view public returns (uint) {
         return jackpots[currentJackpotID].amount;
     }
 
-    function getCurrentJackpotID() constant public returns (uint) {
+    function getCurrentJackpotID() view public returns (uint) {
         return currentJackpotID;
     }
 
@@ -33,7 +33,7 @@ contract JackpotManager {
     // @return – the updated jackpot amount.
     function donateToJackpot() public payable {
         jackpots[currentJackpotID].amount = jackpots[currentJackpotID].amount.add(msg.value);
-        JackpotIncreased(msg.value);
+        emit JackpotIncreased(msg.value);
     }
 
     function setJackpotReceivers(address[] _receivers0, address[] _receivers1) internal returns (uint) {

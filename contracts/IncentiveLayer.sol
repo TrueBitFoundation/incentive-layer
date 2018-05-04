@@ -73,7 +73,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         require(deposits[msg.sender] >= amount);
         deposits[account] = deposits[account].sub(amount);
         task.bondedDeposits[account] = task.bondedDeposits[account].add(amount);
-        DepositBonded(taskID, account, amount);
+        emit DepositBonded(taskID, account, amount);
         return task.bondedDeposits[account];
     }
 
@@ -87,7 +87,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
         deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
-        DepositUnbonded(taskID, msg.sender, bondedDeposit);
+        emit DepositUnbonded(taskID, msg.sender, bondedDeposit);
         
         return bondedDeposit;
     }
@@ -101,7 +101,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         uint bondedDeposit = task.bondedDeposits[account];
         delete task.bondedDeposits[account];
         jackpot = jackpot.add(bondedDeposit);
-        BondedDepositMovedToJackpot(taskID, account, bondedDeposit);
+        emit BondedDepositMovedToJackpot(taskID, account, bondedDeposit);
         
         return bondedDeposit;
     }
@@ -133,7 +133,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         t.initialReward = t.reward;
         bondDeposit(numTasks, msg.sender, minDeposit);
         log0(keccak256(msg.sender)); // possible bug if log is after event
-        TaskCreated(numTasks, minDeposit, numBlocks, t.reward);
+        emit TaskCreated(numTasks, minDeposit, numBlocks, t.reward);
         numTasks.add(1);
         return true;
     }
@@ -147,7 +147,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         require(t.owner == msg.sender);
         require(stateChangeTimeoutReached(taskID));
         t.state = State(newState);
-        TaskStateChange(taskID, newState);
+        emit TaskStateChange(taskID, newState);
         return true;
     }
 
@@ -166,10 +166,10 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         bondDeposit(taskID, msg.sender, t.minDeposit);
         t.selectedSolver = msg.sender;
         t.randomBitsHash = randomBitsHash;
-        t.blockhash = block.blockhash(block.number.add(1));
+        t.blockhash = blockhash(block.number.add(1));
         t.state = State.SolverSelected;
 
-        SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit, t.randomBitsHash);
+        emit SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit, t.randomBitsHash);
         return true;
     }
 
@@ -189,7 +189,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         s.solutionHash1 = solutionHash1;
         s.solverConvicted = false;
         t.state = State.SolutionComitted;
-        SolutionsCommitted(taskID, t.minDeposit, t.taskData, s.solutionHash0, s.solutionHash1);
+        emit SolutionsCommitted(taskID, t.minDeposit, t.taskData, s.solutionHash0, s.solutionHash1);
         return true;
     }
 
@@ -235,7 +235,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
             solution = 1;
         }
         delete tasks[taskID].challenges[msg.sender];
-        VerificationCommitted(msg.sender, tasks[taskID].jackpotID, solution, position);
+        emit VerificationCommitted(msg.sender, tasks[taskID].jackpotID, solution, position);
         return true;
     }
 
@@ -258,12 +258,12 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
             t.finalityCode = 2;
             t.state = State.TaskFinalized;
         } else {
-            SolutionRevealed(taskID, originalRandomBits);
+            emit SolutionRevealed(taskID, originalRandomBits);
         }
     }
 
     function isForcedError(uint randomBits) internal view returns (bool) {
-        return (uint(keccak256(randomBits, block.blockhash(block.number))) < forcedErrorThreshold);
+        return (uint(keccak256(randomBits, blockhash(block.number))) < forcedErrorThreshold);
     }
 
     function rewardJackpot(uint taskID) internal {
@@ -286,7 +286,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         s.currentChallenger = s.currentChallenger + 1;
     }
 
-    function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal returns (bool) {
+    function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal pure returns (bool) {
         solver;
         challenger;
         taskData;

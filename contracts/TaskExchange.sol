@@ -39,7 +39,14 @@ contract TaskExchange is DepositsManager {
         return (t.solution, t.finalized);
     }
 
-    function getTaskData(uint taskID) public view returns(bytes taskData, uint numSteps, uint state, uint[3] intervals, uint taskCreationBlockNumber) {
+    function getTaskData(uint taskID) public view 
+    returns(
+        bytes taskData, 
+        uint numSteps, 
+        uint state, 
+        uint[3] intervals, 
+        uint taskCreationBlockNumber
+    ) {
         Task storage t = tasks[taskID];
         return (t.taskData, t.numSteps, uint(t.state), t.intervals, t.taskCreationBlockNumber);
     }
@@ -73,7 +80,7 @@ contract TaskExchange is DepositsManager {
         require(deposits[msg.sender] >= amount);
         deposits[account] = deposits[account].sub(amount);
         task.bondedDeposits[account] = task.bondedDeposits[account].add(amount);
-        DepositBonded(taskID, account, amount);
+        emit DepositBonded(taskID, account, amount);
         return task.bondedDeposits[account];
     }
 
@@ -87,7 +94,7 @@ contract TaskExchange is DepositsManager {
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
         deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
-        DepositUnbonded(taskID, msg.sender, bondedDeposit);
+        emit DepositUnbonded(taskID, msg.sender, bondedDeposit);
         
         return bondedDeposit;
     }
@@ -96,7 +103,7 @@ contract TaskExchange is DepositsManager {
     // @param taskID – the task id.
     // @param account – the user's address.
     // @return – the user's bonded deposits for a task.
-    function getBondedDeposit(uint taskID, address account) constant public returns (uint) {
+    function getBondedDeposit(uint taskID, address account) view public returns (uint) {
         return tasks[taskID].bondedDeposits[account];
     }
 
@@ -106,7 +113,14 @@ contract TaskExchange is DepositsManager {
     // @param taskData – tbd. could be hash of the wasm file on a filesystem.
     // @param numBlocks – the number of blocks to adjust for task difficulty
     // @return – boolean
-    function createTask(uint minDeposit, bytes taskData, uint[3] intervals, uint numSteps, IDisputeResolutionLayer disputeRes) public payable returns (bool) {
+    function createTask(
+        uint minDeposit, 
+        bytes taskData, 
+        uint[3] intervals, 
+        uint numSteps, 
+        IDisputeResolutionLayer disputeRes
+        ) public payable returns (bool) {
+
         require(deposits[msg.sender] >= minDeposit);
         require(msg.value > 0);
         Task storage t = tasks[numTasks];
@@ -120,7 +134,7 @@ contract TaskExchange is DepositsManager {
         t.numSteps = numSteps;
         bondDeposit(numTasks, msg.sender, minDeposit);
         log0(keccak256(msg.sender)); // possible bug if log is after event
-        TaskCreated(numTasks, minDeposit, msg.sender);
+        emit TaskCreated(numTasks, minDeposit, msg.sender);
         numTasks = numTasks.add(1);
         return true;
     }
@@ -139,7 +153,7 @@ contract TaskExchange is DepositsManager {
         t.selectedSolver = msg.sender;
         t.state = State.Solve;
 
-        SolverSelected(taskID, msg.sender, t.minDeposit);
+        emit SolverSelected(taskID, msg.sender, t.minDeposit);
         return true;
     }
 
@@ -155,7 +169,7 @@ contract TaskExchange is DepositsManager {
 
         t.solution = solution;
         t.state = State.Solved;
-        SolutionCommitted(taskID, t.minDeposit, t.solution);
+        emit SolutionCommitted(taskID, t.minDeposit, t.solution);
         return true;
     }
 
@@ -174,11 +188,11 @@ contract TaskExchange is DepositsManager {
 
         //Spec variable is just hash of data used to initialize new game
         t.currentGame = t.disputeRes.commitChallenge(t.selectedSolver, msg.sender, keccak256(t.taskData, t.solution, t.minDeposit));
-        VerificationCommitted(taskID, t.currentGame);
+        emit VerificationCommitted(taskID, t.currentGame);
         return true;
     }
 
-    function convictSolver(uint taskID, bytes32 gameId) public {
+    function convictSolver(uint taskID) public {
         Task storage t = tasks[taskID];
         uint status = t.disputeRes.status(t.currentGame);
         require(status == 4);//Verifier won
@@ -188,7 +202,7 @@ contract TaskExchange is DepositsManager {
         t.state = State.Timeout;
     }
 
-    function convictVerifier(uint taskID, bytes32 gameId) public {
+    function convictVerifier(uint taskID) public {
         Task storage t = tasks[taskID];
         uint status = t.disputeRes.status(t.currentGame);
         require(status == 3);//Solver won

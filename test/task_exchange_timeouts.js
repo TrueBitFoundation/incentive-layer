@@ -72,7 +72,7 @@ contract('TaskExchange timeouts', function(accounts) {
     })
   })
 
-  context('timing out with no selected solver', () => {
+  context('timing out with selected solver and no solution submitted', () => {
 
     before(async () => {
       taskExchange = await TaskExchange.new()

@@ -11,10 +11,9 @@ contract DepositsManager {
 
     event DepositMade(address who, uint amount);
     event DepositWithdrawn(address who, uint amount);
-    event JackpotIncreased(uint amount);
 
     // @dev – the constructor
-    function DepositsManager() public {
+    constructor() public {
         owner = msg.sender;
     }
     
@@ -26,7 +25,7 @@ contract DepositsManager {
     // @dev – returns an account's deposit
     // @param who – the account's address.
     // @return – the account's deposit.
-    function getDeposit(address who) constant public returns (uint) {
+    function getDeposit(address who) view public returns (uint) {
         return deposits[who];
     }
 
@@ -34,7 +33,7 @@ contract DepositsManager {
     // @return – the user's updated deposit amount.
     function makeDeposit() public payable returns (uint) {
         deposits[msg.sender] = deposits[msg.sender].add(msg.value);
-        DepositMade(msg.sender, msg.value);
+        emit DepositMade(msg.sender, msg.value);
         return deposits[msg.sender];
     }
 
@@ -47,7 +46,7 @@ contract DepositsManager {
         deposits[msg.sender] = deposits[msg.sender].sub(amount);
         msg.sender.transfer(amount);
 
-        DepositWithdrawn(msg.sender, amount);
+        emit DepositWithdrawn(msg.sender, amount);
         return deposits[msg.sender];
     }
 

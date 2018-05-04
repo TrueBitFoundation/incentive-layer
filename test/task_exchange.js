@@ -105,7 +105,7 @@ contract('TaskExchange', function(accounts) {
     })
 
     it("should convict verifier", async () => {
-      tx = await taskExchange.convictVerifier(taskID, web3.utils.soliditySha3(solver, verifier, 9), {from: solver})
+      tx = await taskExchange.convictVerifier(taskID, {from: solver})
     })
 
     it("should finalize task", async () => {
