@@ -21,7 +21,6 @@
   "homepage": "https://github.com/TrueBitFoundation/truebit-contracts#readme",
   "devDependencies": {
     "ganache-cli": "^6.0.3",
-    "truffle": "^4.0.1",
     "web3": "^1.0.0-beta.24"
   },
   "dependencies": {
