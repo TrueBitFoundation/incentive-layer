@@ -11,8 +11,8 @@ contract TaskExchange is DepositsManager {
     event DepositUnbonded(uint taskID, address account, uint amount);
     event TaskCreated(uint taskID, uint minDeposit, address creator);
     event SolverSelected(uint indexed taskID, address solver, uint minDeposit);
-    event SolutionCommitted(uint taskID, uint minDeposit, bytes32 solution);
-    event VerificationCommitted(uint taskID, bytes32 gameId);
+    event SolutionCommitted(uint taskID, uint minDeposit, bytes32 solution, bytes32 stateHash);
+    event VerificationCommitted(uint taskID, bytes32 gameId, uint responseTime);
 
     enum State { Register, Solve, Solved, Verify, Timeout }
 
@@ -28,15 +28,16 @@ contract TaskExchange is DepositsManager {
         address currentChallenger;
         bytes32 currentGame;
         bytes32 solution;
+	bytes32 stateHash;
         uint[3] intervals;
         IDisputeResolutionLayer disputeRes;
         uint numSteps;
         bool finalized;
     }
 
-    function getSolution(uint taskID) public view returns(bytes32 solution, bool finalized) {
+    function getSolution(uint taskID) public view returns(bytes32 solution, bytes32 stateHash, bool finalized) {
         Task storage t = tasks[taskID];
-        return (t.solution, t.finalized);
+        return (t.solution, t.stateHash, t.finalized);
     }
 
     function getTaskData(uint taskID) public view 
@@ -160,16 +161,18 @@ contract TaskExchange is DepositsManager {
     // @dev – selected solver submits a solution to the exchange
     // @param taskID – the task id.
     // @param solution - the submitted solution
+    // @param stateHash - the hash of the state of the VM
     // @return – boolean
-    function commitSolution(uint taskID, bytes32 solution) public returns (bool) {
+    function commitSolution(uint taskID, bytes32 solution, bytes32 stateHash) public returns (bool) {
         Task storage t = tasks[taskID];
         require(t.selectedSolver == msg.sender);
         require(t.state == State.Solve);
         require(block.number < t.taskCreationBlockNumber.add(t.intervals[uint(t.state)]));
 
         t.solution = solution;
+	t.stateHash = stateHash;
         t.state = State.Solved;
-        emit SolutionCommitted(taskID, t.minDeposit, t.solution);
+        emit SolutionCommitted(taskID, t.minDeposit, t.solution, t.stateHash);
         return true;
     }
 
@@ -188,7 +191,7 @@ contract TaskExchange is DepositsManager {
 
         //Spec variable is just hash of data used to initialize new game
         t.currentGame = t.disputeRes.commitChallenge(t.selectedSolver, msg.sender, keccak256(t.taskData, t.solution, t.minDeposit));
-        emit VerificationCommitted(taskID, t.currentGame);
+        emit VerificationCommitted(taskID, t.currentGame, t.intervals[2]);
         return true;
     }
 
