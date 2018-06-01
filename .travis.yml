@@ -10,11 +10,10 @@ matrix:
       dist: trusty
       before_install: 
       - npm install
-      - npm install truffle
 
-install: 
+install:
   - ganache-cli 2>&1 /dev/null &
 
 script:
-  - truffle migrate
-  - truffle test
+  - npm run migrate
+  - npm run test
