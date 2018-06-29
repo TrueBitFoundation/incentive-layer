@@ -1,10 +1,11 @@
+const TRU = artifacts.require('TRU.sol');
 const IncentiveLayer = artifacts.require('IncentiveLayer.sol')
 const Web3 = require('web3')
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 const mineBlocks = require('./helpers/mineBlocks')
 
 contract('IncentiveLayer Timeouts', function(accounts) {
-  let incentiveLayer, deposit, bond, tx, log, taskID, intent
+  let incentiveLayer, deposit, bond, tx, log, taskID, intent, token
 
   const taskGiver = accounts[1]
   const solver = accounts[2]
@@ -16,7 +17,8 @@ contract('IncentiveLayer Timeouts', function(accounts) {
 
   context('task giver calls timeout on solver for submitting solution in time', async () => {
     before( async ()=> {
-      incentiveLayer = await IncentiveLayer.new()
+      token = await TRU.new()
+      incentiveLayer = await IncentiveLayer.new(token.address)
       await incentiveLayer.makeDeposit({from: taskGiver, value: minDeposit*2})
       await incentiveLayer.makeDeposit({from: solver, value: minDeposit*2})
       tx = await incentiveLayer.createTask(minDeposit, 0x0, 5, {from: taskGiver, value: reward})

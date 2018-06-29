@@ -1,13 +1,14 @@
-
+const TRU = artifacts.require('TRU.sol');
 const IncentiveLayer = artifacts.require('IncentiveLayer.sol');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 contract('DepositsManager', function(accounts) {
-  let depositsManager;
+  let depositsManager, token;
 
   beforeEach(async () => {
-      depositsManager = await IncentiveLayer.new()
+      token = await TRU.new();
+      depositsManager = await IncentiveLayer.new(token.address);
   })
 
   describe('fallback', () => {
