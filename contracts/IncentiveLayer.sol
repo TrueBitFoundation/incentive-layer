@@ -2,6 +2,8 @@ pragma solidity ^0.4.18;
 
 import "./DepositsManager.sol";
 import "./JackpotManager.sol";
+import "./TRU.sol";
+
 
 contract IncentiveLayer is JackpotManager, DepositsManager {
 
@@ -53,6 +55,13 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     mapping(uint => Solution) private solutions;
 
     uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55]; // one timeout per state in the FSM
+
+    TRU trutoken;
+
+
+    constructor (address _underlyingToken) public {
+        trutoken = TRU(_underlyingToken);
+    }
 
     // @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
     // @param taskID - the task id.
@@ -144,7 +153,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     // @return – boolean
     function changeTaskState(uint taskID, uint newState) public returns (bool) {
         Task storage t = tasks[taskID];
-        require(t.owner == msg.sender);
+        require(t.selectedSolver == msg.sender);
         require(stateChangeTimeoutReached(taskID));
         t.state = State(newState);
         emit TaskStateChange(taskID, newState);

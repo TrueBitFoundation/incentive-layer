@@ -1,4 +1,5 @@
 const IncentiveLayer = artifacts.require('./IncentiveLayer.sol')
+const TRU = artifacts.require('./TRU.sol')
 const Web3 = require('web3')
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 
@@ -8,7 +9,7 @@ const mineBlocks = require('./helpers/mineBlocks')
 const BigNumber = require('bignumber.js')
 
 contract('IncentiveLayer', function(accounts) {
-  let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance
+  let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance, token
 
   const taskGiver = accounts[1]
   const solver = accounts[2]
@@ -21,7 +22,8 @@ contract('IncentiveLayer', function(accounts) {
   context('incentive layer', () => {
 
     before(async () => {
-      incentiveLayer = await IncentiveLayer.new()
+      token = await TRU.new(); 
+      incentiveLayer = await IncentiveLayer.new(token.address)
       oldBalance = await web3.eth.getBalance(solver)
     })
 
@@ -104,7 +106,7 @@ contract('IncentiveLayer', function(accounts) {
       await mineBlocks(web3, 20)
 
       // taskGiver triggers task state transition
-      tx = await incentiveLayer.changeTaskState(taskID, 3, {from: taskGiver})
+      tx = await incentiveLayer.changeTaskState(taskID, 3, {from: solver})
       log = tx.logs.find(log => log.event === 'TaskStateChange')
       assert(log.args.taskID.eq(taskID))
       assert(log.args.state.eq(3))
@@ -118,7 +120,7 @@ contract('IncentiveLayer', function(accounts) {
       await mineBlocks(web3, 10)
 
       // taskGiver triggers task  state transition
-      tx = await incentiveLayer.changeTaskState(taskID, 4, {from: taskGiver})
+      tx = await incentiveLayer.changeTaskState(taskID, 4, {from: solver})
       log = tx.logs.find(log => log.event === 'TaskStateChange')
       assert(log.args.taskID.eq(taskID))
       assert(log.args.state.eq(4))
