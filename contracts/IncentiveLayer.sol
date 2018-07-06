@@ -244,8 +244,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
             solutions[taskID].solution1Challengers.push(msg.sender);
             solution = 1;
         }
-//        position = solutions[taskID].allChallengers.length;
-//        solutions[taskID].allChallengers.push(msg.sender);
+        position = solutions[taskID].allChallengers.length;
+        solutions[taskID].allChallengers.push(msg.sender);
 
         delete tasks[taskID].challenges[msg.sender];
         emit VerificationCommitted(msg.sender, tasks[taskID].jackpotID, solution, position);
