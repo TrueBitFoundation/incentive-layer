@@ -130,7 +130,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     // @param numBlocks – the number of blocks to adjust for task difficulty
     // @return – boolean
     function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) public payable returns (bool) {
-//        require(deposits[msg.sender] >= minDeposit);
+        require(deposits[msg.sender] >= minDeposit);
         require(msg.value > 0);
         Task storage t = tasks[numTasks];
         t.owner = msg.sender;
@@ -140,7 +140,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         t.taskCreationBlockNumber = block.number;
         t.numBlocks = numBlocks;
         t.initialReward = t.reward;
-//        bondDeposit(numTasks, msg.sender, minDeposit);
+        bondDeposit(numTasks, msg.sender, minDeposit);
         log0(keccak256(msg.sender)); // possible bug if log is after event
         emit TaskCreated(numTasks, minDeposit, numBlocks, t.reward);
         numTasks.add(1);
@@ -307,7 +307,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     function finalizeTask(uint taskID) public {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
-        require(t.owner == msg.sender);
+        //require(t.owner == msg.sender);
         require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
         t.state = State.TaskFinalized;
         t.finalityCode = 1; // Task has been completed
