@@ -47,6 +47,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         bool solution0Correct;
         address[] solution0Challengers;
         address[] solution1Challengers;
+        address[] allChallengers;
         uint currentChallenger;
         bool solverConvicted;
     }
@@ -153,7 +154,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     // @return – boolean
     function changeTaskState(uint taskID, uint newState) public returns (bool) {
         Task storage t = tasks[taskID];
-        require(t.selectedSolver == msg.sender);
+        //require(t.selectedSolver == msg.sender);
         require(stateChangeTimeoutReached(taskID));
         t.state = State(newState);
         emit TaskStateChange(taskID, newState);
@@ -243,6 +244,9 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
             solutions[taskID].solution1Challengers.push(msg.sender);
             solution = 1;
         }
+//        position = solutions[taskID].allChallengers.length;
+//        solutions[taskID].allChallengers.push(msg.sender);
+
         delete tasks[taskID].challenges[msg.sender];
         emit VerificationCommitted(msg.sender, tasks[taskID].jackpotID, solution, position);
         return true;
@@ -278,7 +282,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     function rewardJackpot(uint taskID) internal {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
-        t.jackpotID = setJackpotReceivers(s.solution0Challengers, s.solution1Challengers);
+        t.jackpotID = setJackpotReceivers(s.allChallengers);
         t.owner.transfer(t.reward); // send reward back to task giver as it was never used
     }
 
