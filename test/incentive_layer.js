@@ -28,10 +28,10 @@ contract('IncentiveLayer', function(accounts) {
     })
 
     it("should have participants make deposits", async () => {
-      // taskGiver makes a deposit
-      //await incentiveLayer.makeDeposit({from: taskGiver, value: minDeposit})
-      //deposit = await incentiveLayer.getDeposit.call(taskGiver)
-      //assert(deposit.eq(minDeposit))
+      // taskGiver makes a deposit to fund taxes
+      await incentiveLayer.makeDeposit({from: taskGiver, value: minDeposit})
+      deposit = await incentiveLayer.getDeposit.call(taskGiver)
+      assert(deposit.eq(minDeposit))
 
       // to-be solver makes a deposit
       await incentiveLayer.makeDeposit({from: solver, value: minDeposit})
@@ -49,10 +49,10 @@ contract('IncentiveLayer', function(accounts) {
       // they bond part of their deposit.
       tx = await incentiveLayer.createTask(minDeposit, 0x0, 5, {from: taskGiver, value: reward})
 
-//      log = tx.logs.find(log => log.event === 'DepositBonded')
-//      assert(log.args.taskID.eq(0))
-//      assert.equal(log.args.account, taskGiver)
-//      assert(log.args.amount.eq(minDeposit))
+      log = tx.logs.find(log => log.event === 'DepositBonded')
+      assert(log.args.taskID.eq(0))
+      assert.equal(log.args.account, taskGiver)
+      assert(log.args.amount.eq(minDeposit))
 
       log = tx.logs.find(log => log.event === 'TaskCreated')
       assert(log.args.taskID.isZero())
@@ -105,7 +105,7 @@ contract('IncentiveLayer', function(accounts) {
 
       await mineBlocks(web3, 20)
 
-      // taskGiver triggers task state transition
+      // solver triggers task state transition as he wants solution to be finalized
       tx = await incentiveLayer.changeTaskState(taskID, 3, {from: solver})
       log = tx.logs.find(log => log.event === 'TaskStateChange')
       assert(log.args.taskID.eq(taskID))
@@ -119,8 +119,8 @@ contract('IncentiveLayer', function(accounts) {
 
       await mineBlocks(web3, 10)
 
-      // taskGiver triggers task  state transition
-      tx = await incentiveLayer.changeTaskState(taskID, 4, {from: solver})
+      // verifier triggers task  state transition as they want to challenge
+      tx = await incentiveLayer.changeTaskState(taskID, 4, {from: verifier})
       log = tx.logs.find(log => log.event === 'TaskStateChange')
       assert(log.args.taskID.eq(taskID))
       assert(log.args.state.eq(4))
