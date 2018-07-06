@@ -25,7 +25,7 @@ contract('JackpotManager', function(accounts) {
     })
 
     it('should distribute jackpot', async () => {
-      await jackpotManager.distributeJackpot([accounts[0], accounts[1]], [accounts[2], accounts[3]])
+      await jackpotManager.distributeJackpot([accounts[0], accounts[1], accounts[2], accounts[3]])
 
       const jackpotID = await jackpotManager.getCurrentJackpotID.call()
 
@@ -34,22 +34,22 @@ contract('JackpotManager', function(accounts) {
 
     it('should be able to receive payment', async () => {
       oldBalance = await web3.eth.getBalance(accounts[0])
-      await jackpotManager.receiveJackpotPayment(0, 0, 0, {from: accounts[0]})
+      await jackpotManager.receiveJackpotPayment(0, 0, {from: accounts[0]})
       newBalance = await web3.eth.getBalance(accounts[0])
       assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
 
       oldBalance = await web3.eth.getBalance(accounts[1])
-      await jackpotManager.receiveJackpotPayment(0, 0, 1, {from: accounts[1]})
+      await jackpotManager.receiveJackpotPayment(0, 1, {from: accounts[1]})
       newBalance = await web3.eth.getBalance(accounts[1])
       assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
 
       oldBalance = await web3.eth.getBalance(accounts[2])
-      await jackpotManager.receiveJackpotPayment(0, 1, 0, {from: accounts[2]})
+      await jackpotManager.receiveJackpotPayment(0, 2, {from: accounts[2]})
       newBalance = await web3.eth.getBalance(accounts[2])
       assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
 
       oldBalance = await web3.eth.getBalance(accounts[3])
-      await jackpotManager.receiveJackpotPayment(0, 1, 1, {from: accounts[3]})
+      await jackpotManager.receiveJackpotPayment(0, 3, {from: accounts[3]})
       newBalance = await web3.eth.getBalance(accounts[3])
       
       assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))

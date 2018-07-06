@@ -8,8 +8,7 @@ contract JackpotManager {
     struct Jackpot {
         uint finalAmount;
         uint amount;
-        address[] receivers0;
-        address[] receivers1;
+        address[] challengers;
         uint redeemedCount;
     }
 
@@ -36,25 +35,18 @@ contract JackpotManager {
         emit JackpotIncreased(msg.value);
     }
 
-    function setJackpotReceivers(address[] _receivers0, address[] _receivers1) internal returns (uint) {
+    function setJackpotReceivers(address[] _challengers) internal returns (uint) {
         jackpots[currentJackpotID].finalAmount = jackpots[currentJackpotID].amount;
-        jackpots[currentJackpotID].receivers0 = _receivers0;
-        jackpots[currentJackpotID].receivers1 = _receivers1;
+        jackpots[currentJackpotID].challengers = _challengers;
         currentJackpotID = currentJackpotID + 1;
         return currentJackpotID - 1;
     }
 
-    function receiveJackpotPayment(uint jackpotID, uint receiverGroup, uint index) public {
+    function receiveJackpotPayment(uint jackpotID, uint index) public {
         Jackpot storage j = jackpots[jackpotID];
-
-        if (receiverGroup == 0) {
-            require(j.receivers0[index] == msg.sender);
-        } else {
-            require(j.receivers1[index] == msg.sender);
-        }
+        require(j.challengers[index] == msg.sender);        
         
-        uint amount = j.finalAmount.div(j.receivers0.length + j.receivers1.length);
-
+        uint amount = j.finalAmount.div(2**(index+1));
         //transfer jackpot payment
         msg.sender.transfer(amount);
     }
