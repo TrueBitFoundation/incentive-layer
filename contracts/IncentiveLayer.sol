@@ -19,6 +19,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     event SolutionRevealed(uint taskID, uint randomBits);
     event TaskStateChange(uint taskID, uint state);
     event VerificationCommitted(address verifier, uint jackpotID, uint solutionID, uint index);
+    event SolverDepositBurned(address solver, uint taskID);
 
     enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, TaskFinalized, TaskTimeout }
 
@@ -202,6 +203,31 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         emit SolutionsCommitted(taskID, t.minDeposit, t.taskData, s.solutionHash0, s.solutionHash1);
         return true;
     }
+
+    // @dev – selected solver revealed his random bits prematurely
+    // @param taskID – The task id.
+    // @param randomBits – bits whose hash is the commited randomBitsHash of this task
+    // @return – boolean
+    function prematureReveal(uint taskID, uint originalRandomBits) public returns (bool) {
+        Task storage t = tasks[taskID];
+        require(t.state == State.SolverSelected);
+        require(block.number < t.taskCreationBlockNumber.add(t.numBlocks));
+        require(t.randomBitsHash == keccak256(originalRandomBits));
+        uint bondedDeposit = t.bondedDeposits[t.selectedSolver];
+        delete t.bondedDeposits[t.selectedSolver];
+        deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit/2);
+        deposits[address(0)] = deposits[address(0)].add(bondedDeposit/2);
+        emit SolverDepositBurned(t.selectedSolver, taskID);
+        
+        // Reset task data to selected another solver
+        t.state = State.TaskInitialized;
+        t.selectedSolver = 0x0;
+        t.taskCreationBlockNumber = block.number;
+        emit TaskCreated(taskID, t.minDeposit, t.numBlocks, t.reward);
+
+        return true;
+    }
+        
 
     function taskGiverTimeout(uint taskID) public {
         Task storage t = tasks[taskID];
