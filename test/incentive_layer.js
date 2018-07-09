@@ -15,6 +15,7 @@ contract('IncentiveLayer', function(accounts) {
   const solver = accounts[2]
   const verifier = accounts[3]
   const randomUser = accounts[4]
+  const backupSolver = accounts[5]
 
   const minDeposit = 50000
   const reward = web3.utils.toWei('1', 'ether')
@@ -191,6 +192,11 @@ contract('IncentiveLayer', function(accounts) {
             await incentiveLayer.makeDeposit({from: verifier, value: minDeposit})
             deposit = await incentiveLayer.getDeposit.call(verifier)
             assert(deposit.eq(minDeposit))
+
+            // to-be backup solver makes a deposit
+            await incentiveLayer.makeDeposit({from: backupSolver, value: minDeposit})
+            deposit = await incentiveLayer.getDeposit.call(backupSolver)
+            assert(deposit.eq(minDeposit))
         })
 
         it("should create task", async () => {
@@ -251,6 +257,23 @@ contract('IncentiveLayer', function(accounts) {
 
             deposit = await incentiveLayer.getBondedDeposit.call(taskID, solver)
             assert(deposit.eq(0))
+        })
+
+        it('new solver should be selected', async () => {
+            tx = await incentiveLayer.registerForTask(taskID, web3.utils.soliditySha3(randomBits), {from: backupSolver})
+            log = tx.logs.find(log => log.event === 'DepositBonded')
+            assert(log.args.taskID.eq(taskID))
+            assert.equal(log.args.account, backupSolver)
+            assert(log.args.amount.eq(minDeposit))
+            deposit = await incentiveLayer.getDeposit.call(backupSolver)
+            assert(deposit.eq(0))
+            
+            log = tx.logs.find(log => log.event === 'SolverSelected')
+            assert(log.args.taskID.eq(taskID))
+            assert.equal(log.args.solver, backupSolver)
+            assert.equal(log.args.taskData, 0x0)
+            assert(log.args.minDeposit.eq(minDeposit))
+            assert.equal(log.args.randomBitsHash, web3.utils.soliditySha3(randomBits))
         })
     })
 })
