@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "./DepositsManager.sol";
 import "./JackpotManager.sol";
 import "./TRU.sol";
-
+import "./ExchangeRateOracle.sol";
 
 contract IncentiveLayer is JackpotManager, DepositsManager {
 
@@ -59,10 +59,11 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55]; // one timeout per state in the FSM
 
     TRU trutoken;
+    ExchangeRateOracle oracle;
 
-
-    constructor (address _underlyingToken) public {
+    constructor (address _underlyingToken, address _exchangeRateOracle) public {
         trutoken = TRU(_underlyingToken);
+        oracle = ExchangeRateOracle(_exchangeRateOracle);
     }
 
     // @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
@@ -131,9 +132,15 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     // @param taskData – tbd. could be hash of the wasm file on a filesystem.
     // @param numBlocks – the number of blocks to adjust for task difficulty
     // @return – boolean
-    function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) public payable returns (bool) {
-        require(deposits[msg.sender] >= minDeposit);
+//    function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) public payable returns (bool) {
+    function createTask(uint maxDifficulty, bytes32 taskData, uint numBlocks) public payable returns (bool) {
         require(msg.value > 0);
+        
+        // Get minDeposit required by task
+        uint minDeposit = oracle.getMinDeposit(maxDifficulty);
+        require(minDeposit > 0);
+        require(deposits[msg.sender] >= minDeposit);
+
         Task storage t = tasks[numTasks];
         t.owner = msg.sender;
         t.minDeposit = minDeposit;

@@ -1,14 +1,16 @@
 const TRU = artifacts.require('TRU.sol');
+const ExchangeRateOracle = artifacts.require('./ExchangeRateOracle.sol');
 const IncentiveLayer = artifacts.require('IncentiveLayer.sol');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 contract('DepositsManager', function(accounts) {
-  let depositsManager, token;
+  let depositsManager, token, oracle;
 
   beforeEach(async () => {
       token = await TRU.new();
-      depositsManager = await IncentiveLayer.new(token.address);
+      oracle = await ExchangeRateOracle.new()
+      depositsManager = await IncentiveLayer.new(token.address, oracle.address);
   })
 
   describe('fallback', () => {
