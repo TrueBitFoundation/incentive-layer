@@ -1,6 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
+import "./TRU.sol";
 
 contract JackpotManager {
     using SafeMath for uint;
@@ -15,8 +16,13 @@ contract JackpotManager {
     mapping(uint => Jackpot) jackpots;//keeps track of versions of jackpots
 
     uint internal currentJackpotID;
+    TRU public token;
 
     event JackpotIncreased(uint amount);
+
+    constructor (address _TRU) public {
+        token = TRU(_TRU);
+    }
 
     // @dev – returns the current jackpot
     // @return – the jackpot.
@@ -28,12 +34,17 @@ contract JackpotManager {
         return currentJackpotID;
     }
 
-    // @dev – allows a uer to donate to the jackpot.
-    // @return – the updated jackpot amount.
-    function donateToJackpot() public payable {
-        jackpots[currentJackpotID].amount = jackpots[currentJackpotID].amount.add(msg.value);
-        emit JackpotIncreased(msg.value);
-    }
+    //// @dev – allows a uer to donate to the jackpot.
+    //// @return – the updated jackpot amount.
+    //function donateToJackpot() public payable {
+    //    jackpots[currentJackpotID].amount = jackpots[currentJackpotID].amount.add(msg.value);
+    //    emit JackpotIncreased(msg.value);
+    //}
+
+    function increaseJackpot(uint _amount) public payable {
+        jackpots[currentJackpotID].amount = jackpots[currentJackpotID].amount.add(_amount);
+        emit JackpotIncreased(_amount);
+    } 
 
     function setJackpotReceivers(address[] _challengers) internal returns (uint) {
         jackpots[currentJackpotID].finalAmount = jackpots[currentJackpotID].amount;

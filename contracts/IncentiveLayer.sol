@@ -61,8 +61,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     TRU trutoken;
     ExchangeRateOracle oracle;
 
-    constructor (address _underlyingToken, address _exchangeRateOracle) public {
-        trutoken = TRU(_underlyingToken);
+    constructor (address _TRU, address _exchangeRateOracle) DepositsManager(_TRU)  public {
+        trutoken = TRU(_TRU);
         oracle = ExchangeRateOracle(_exchangeRateOracle);
     }
 
