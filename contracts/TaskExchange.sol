@@ -35,6 +35,8 @@ contract TaskExchange is DepositsManager {
         bool finalized;
     }
 
+    constructor (address _TRU) DepositsManager(_TRU) public { }
+
     function getSolution(uint taskID) public view returns(bytes32 solution, bytes32 stateHash, bool finalized) {
         Task storage t = tasks[taskID];
         return (t.solution, t.stateHash, t.finalized);
