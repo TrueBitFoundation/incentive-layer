@@ -59,6 +59,7 @@ contract JackpotManager {
         
         uint amount = j.finalAmount.div(2**(index+1));
         //transfer jackpot payment
-        msg.sender.transfer(amount);
+        //msg.sender.transfer(amount);
+        token.mint(msg.sender, amount);
     }
 }
