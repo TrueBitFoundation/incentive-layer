@@ -9,17 +9,20 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 
     uint private numTasks = 0;
     uint private forcedErrorThreshold = 42;
+    uint private taxMultiplier = 5;
 
     event DepositBonded(uint taskID, address account, uint amount);
     event DepositUnbonded(uint taskID, address account, uint amount);
     event BondedDepositMovedToJackpot(uint taskID, address account, uint amount);
-    event TaskCreated(uint taskID, uint minDeposit, uint blockNumber, uint reward);
+    event TaskCreated(uint taskID, uint minDeposit, uint blockNumber, uint reward, uint tax);
     event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit, bytes32 randomBitsHash);
     event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, bytes32 solutionHash0, bytes32 solutionHash1);
     event SolutionRevealed(uint taskID, uint randomBits);
     event TaskStateChange(uint taskID, uint state);
     event VerificationCommitted(address verifier, uint jackpotID, uint solutionID, uint index);
     event SolverDepositBurned(address solver, uint taskID);
+    event VerificationGame(address indexed solver, uint currentChallenger); 
+    event PayReward(address indexed solver, uint reward);
 
     enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, TaskFinalized, TaskTimeout }
 
@@ -28,6 +31,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         address selectedSolver;
         uint minDeposit;
         uint reward;
+        uint tax;
         bytes32 taskData;
         mapping(address => bytes32) challenges;
         State state;
@@ -58,11 +62,9 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 
     uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55]; // one timeout per state in the FSM
 
-    TRU trutoken;
     ExchangeRateOracle oracle;
 
-    constructor (address _underlyingToken, address _exchangeRateOracle) public {
-        trutoken = TRU(_underlyingToken);
+    constructor (address _TRU, address _exchangeRateOracle) DepositsManager(_TRU) JackpotManager(_TRU)  public {
         oracle = ExchangeRateOracle(_exchangeRateOracle);
     }
 
@@ -132,26 +134,31 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     // @param taskData – tbd. could be hash of the wasm file on a filesystem.
     // @param numBlocks – the number of blocks to adjust for task difficulty
     // @return – boolean
-//    function createTask(uint minDeposit, bytes32 taskData, uint numBlocks) public payable returns (bool) {
-    function createTask(uint maxDifficulty, bytes32 taskData, uint numBlocks) public payable returns (bool) {
-        require(msg.value > 0);
-        
+    function createTask(uint maxDifficulty, bytes32 taskData, uint numBlocks, uint reward) public returns (bool) {
         // Get minDeposit required by task
         uint minDeposit = oracle.getMinDeposit(maxDifficulty);
         require(minDeposit > 0);
-        require(deposits[msg.sender] >= minDeposit);
+        require(deposits[msg.sender] >= (reward + (minDeposit * taxMultiplier)));
 
         Task storage t = tasks[numTasks];
         t.owner = msg.sender;
         t.minDeposit = minDeposit;
-        t.reward = msg.value;
+        t.reward = reward;
+        deposits[msg.sender] = deposits[msg.sender].sub(reward);
+
+        t.tax = minDeposit * taxMultiplier;
         t.taskData = taskData;
         t.taskCreationBlockNumber = block.number;
         t.numBlocks = numBlocks;
-        t.initialReward = t.reward;
-        bondDeposit(numTasks, msg.sender, minDeposit);
+        t.initialReward = minDeposit;
+        
+        // LOOK AT: May be some problem if tax amount is also not bonded
+        // but still submitted through makeDeposit. For example,
+        // if the task giver decides to bond the deposit and the
+        // tax can not be collected. Perhaps a nother bonding
+        // structure to escrow the taxes.
         log0(keccak256(msg.sender)); // possible bug if log is after event
-        emit TaskCreated(numTasks, minDeposit, numBlocks, t.reward);
+        emit TaskCreated(numTasks, minDeposit, numBlocks, t.reward, t.tax);
         numTasks.add(1);
         return true;
     }
@@ -162,7 +169,6 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     // @return – boolean
     function changeTaskState(uint taskID, uint newState) public returns (bool) {
         Task storage t = tasks[taskID];
-        //require(t.selectedSolver == msg.sender);
         require(stateChangeTimeoutReached(taskID));
         t.state = State(newState);
         emit TaskStateChange(taskID, newState);
@@ -187,9 +193,36 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         t.blockhash = blockhash(block.number.add(1));
         t.state = State.SolverSelected;
 
+        // Burn task giver's taxes now that someone has claimed the task
+        deposits[t.owner] = deposits[t.owner].sub(t.tax);
+        token.burn(t.tax);
+
         emit SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit, t.randomBitsHash);
         return true;
     }
+
+    // @dev – new solver registers for task if penalize old one, don't burn tokens twice
+    // 0 -> 1
+    // @param taskID – the task id.
+    // @param randomBitsHash – hash of random bits to commit to task
+    // @return – boolean
+    function registerNewSolver(uint taskID, bytes32 randomBitsHash) public returns(bool) {
+        Task storage t = tasks[taskID];
+        
+        require(!(t.owner == 0x0));
+        require(t.state == State.TaskInitialized);
+        require(t.selectedSolver == 0x0);
+        
+        bondDeposit(taskID, msg.sender, t.minDeposit);
+        t.selectedSolver = msg.sender;
+        t.randomBitsHash = randomBitsHash;
+        t.blockhash = blockhash(block.number.add(1));
+        t.state = State.SolverSelected;
+
+        emit SolverSelected(taskID, msg.sender, t.taskData, t.minDeposit, t.randomBitsHash);
+        return true;
+    }
+    
 
     // @dev – selected solver submits a solution to the exchange
     // 1 -> 2
@@ -223,14 +256,14 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         uint bondedDeposit = t.bondedDeposits[t.selectedSolver];
         delete t.bondedDeposits[t.selectedSolver];
         deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit/2);
-        deposits[address(0)] = deposits[address(0)].add(bondedDeposit/2);
+        token.burn(bondedDeposit/2);
         emit SolverDepositBurned(t.selectedSolver, taskID);
         
         // Reset task data to selected another solver
         t.state = State.TaskInitialized;
         t.selectedSolver = 0x0;
         t.taskCreationBlockNumber = block.number;
-        emit TaskCreated(taskID, t.minDeposit, t.numBlocks, t.reward);
+        emit TaskCreated(taskID, t.minDeposit, t.numBlocks, t.reward, 1);
 
         return true;
     }
@@ -330,6 +363,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
             s.solverConvicted = verificationGame(t.selectedSolver, s.solution1Challengers[s.currentChallenger], t.taskData, s.solutionHash1);
         }
         s.currentChallenger = s.currentChallenger + 1;
+        emit VerificationGame(t.selectedSolver, s.currentChallenger);
     }
 
     function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal pure returns (bool) {
@@ -344,7 +378,6 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     function finalizeTask(uint taskID) public {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
-        //require(t.owner == msg.sender);
         require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
         t.state = State.TaskFinalized;
         t.finalityCode = 1; // Task has been completed
@@ -356,7 +389,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
     }
 
     function distributeReward(Task t) internal {
-        t.selectedSolver.transfer(t.reward);
+        token.transfer(t.selectedSolver, t.reward);
+        emit PayReward(t.selectedSolver, t.reward);
     }
 
 }

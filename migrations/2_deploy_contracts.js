@@ -5,23 +5,13 @@ const DisputeResolutionLayerDummy = artifacts.require("./DisputeResolutionLayerD
 const TRU = artifacts.require('./TRU.sol')
 const ExchangeRateOracle = artifacts.require('./ExchangeRateOracle.sol')
 
-//module.exports = function(deployer, network, accounts) {
-//    deployer.deploy(TestJackpotManager)
-//    deployer.deploy(TaskExchange)
-//    deployer.deploy(DisputeResolutionLayerDummy)
-//    deployer.deploy(ExchangeRateOracle)    
-//    deployer.deploy(TRU).then( function () {
-//        deployer.deploy(IncentiveLayer, TRU.address, ExchangeRateOracle.address, {from: accounts[0]});
-//    });
-//}
-
 module.exports = async (deployer, network, accounts) => {
-    deployer.deploy(TestJackpotManager)
-    deployer.deploy(TaskExchange)
-    deployer.deploy(DisputeResolutionLayerDummy)
-    deployer.deploy(ExchangeRateOracle)    
+    await deployer.deploy(DisputeResolutionLayerDummy)
+    //await deployer.deploy(ExchangeRateOracle)    
     await deployer.deploy(TRU)
+    await deployer.deploy(TestJackpotManager, TRU.address)
+    //await deployer.deploy(TaskExchange, TRU.address)
     await deployer.deploy(ExchangeRateOracle)
-    await deployer.deploy(IncentiveLayer, TRU.address, ExchangeRateOracle.address, {from: accounts[0]});
+    await deployer.deploy(IncentiveLayer, TRU.address, ExchangeRateOracle.address, {from: accounts[5]});
 }
     
