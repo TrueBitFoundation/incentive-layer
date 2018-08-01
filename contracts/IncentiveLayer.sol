@@ -4,8 +4,9 @@ import "./DepositsManager.sol";
 import "./JackpotManager.sol";
 import "./TRU.sol";
 import "./ExchangeRateOracle.sol";
+import "./RewardsManager.sol";
 
-contract IncentiveLayer is JackpotManager, DepositsManager {
+contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 
     uint private numTasks = 0;
     uint private forcedErrorThreshold = 42;
@@ -64,7 +65,12 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
 
     ExchangeRateOracle oracle;
 
-    constructor (address _TRU, address _exchangeRateOracle) DepositsManager(_TRU) JackpotManager(_TRU)  public {
+    constructor (address _TRU, address _exchangeRateOracle) 
+        DepositsManager(_TRU) 
+        JackpotManager(_TRU) 
+        RewardsManager(_TRU)  
+        public 
+    {
         oracle = ExchangeRateOracle(_exchangeRateOracle);
     }
 
@@ -138,13 +144,15 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         // Get minDeposit required by task
         uint minDeposit = oracle.getMinDeposit(maxDifficulty);
         require(minDeposit > 0);
-        require(deposits[msg.sender] >= (reward + (minDeposit * taxMultiplier)));
+//        require(deposits[msg.sender] >= (reward + (minDeposit * taxMultiplier)));
+        require(deposits[msg.sender] >= (minDeposit * taxMultiplier));
 
         Task storage t = tasks[numTasks];
         t.owner = msg.sender;
         t.minDeposit = minDeposit;
+        depositReward(numTasks, reward);
         t.reward = reward;
-        deposits[msg.sender] = deposits[msg.sender].sub(reward);
+//        deposits[msg.sender] = deposits[msg.sender].sub(reward);
 
         t.tax = minDeposit * taxMultiplier;
         t.taskData = taskData;
@@ -349,7 +357,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
         t.jackpotID = setJackpotReceivers(s.allChallengers);
-        t.owner.transfer(t.reward); // send reward back to task giver as it was never used
+        //t.owner.transfer(t.reward); // send reward back to task giver as it was never used
+        payReward(taskID, t.owner);
     }
 
     // verifier should be responsible for calling this first
@@ -381,7 +390,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager {
         require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
         t.state = State.TaskFinalized;
         t.finalityCode = 1; // Task has been completed
-        distributeReward(t);
+        //distributeReward(t);
+        payReward(taskID, t.selectedSolver);
     }
 
     function getTaskFinality(uint taskID) public view returns (uint) {
