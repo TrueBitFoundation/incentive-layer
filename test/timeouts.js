@@ -19,14 +19,24 @@ contract('IncentiveLayer Timeouts', function(accounts) {
 
   context('task giver calls timeout on solver for submitting solution in time', async () => {
     before( async ()=> {
-      token = await TRU.new()
+      token = await TRU.new({from: accounts[5]})
       oracle = await ExchangeRateOracle.new({from: accounts[6]})
       await oracle.updateExchangeRate(1000, {from: accounts[6]})
       
       incentiveLayer = await IncentiveLayer.new(token.address, oracle.address)
-      await incentiveLayer.makeDeposit({from: taskGiver, value: minDeposit*2})
-      await incentiveLayer.makeDeposit({from: solver, value: minDeposit*2})
-      tx = await incentiveLayer.createTask(minDeposit, 0x0, 5, {from: taskGiver, value: reward})
+      await token.transferOwnership(incentiveLayer.address, {from: accounts[5]})
+
+      await token.sendTransaction({from: taskGiver, value: web3.utils.toWei('1', 'ether')})
+      await token.sendTransaction({from: solver, value: web3.utils.toWei('1', 'ether')})
+      await token.sendTransaction({from: verifier, value: web3.utils.toWei('1', 'ether')})
+
+      await token.approve(incentiveLayer.address, reward + (minDeposit * 2 * 5), {from: taskGiver})
+      await token.approve(incentiveLayer.address, minDeposit * 2, {from: solver})
+      await token.approve(incentiveLayer.address, minDeposit * 2, {from: verifier})
+
+      await incentiveLayer.makeDeposit(minDeposit * 2 * 5,{from: taskGiver})
+      await incentiveLayer.makeDeposit(minDeposit * 2, {from: solver})
+      tx = await incentiveLayer.createTask(minDeposit, 0x0, 5, reward, {from: taskGiver})
       log = tx.logs.find(log => log.event === 'TaskCreated')
       taskID = log.args.taskID.toNumber()
       await incentiveLayer.registerForTask(taskID, web3.utils.soliditySha3(randomBits), {from: solver})

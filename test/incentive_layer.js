@@ -10,7 +10,7 @@ const mineBlocks = require('./helpers/mineBlocks')
 const BigNumber = require('bignumber.js')
 
 contract('IncentiveLayer', function(accounts) {
-    let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance, token, oracle, balace
+    let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance, token, oracle, balance
 
     const taskGiver = accounts[1]
     const solver = accounts[2]
@@ -52,11 +52,13 @@ contract('IncentiveLayer', function(accounts) {
 
         it("should have participants make deposits", async () => {
             // taskGiver makes a deposit to fund taxes
-            await incentiveLayer.makeDeposit(reward + (minDeposit * 5), {from: taskGiver})
+            //await incentiveLayer.makeDeposit(reward + (minDeposit * 5), {from: taskGiver})
+            await incentiveLayer.makeDeposit(minDeposit * 5, {from: taskGiver})
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
-            assert(deposit.eq(reward + (minDeposit * 5)))
+            //assert(deposit.eq(reward + (minDeposit * 5)))
+            assert(deposit.eq(minDeposit * 5))
             let layerBalance = await token.balanceOf(incentiveLayer.address);
-            assert(layerBalance.eq(reward + (minDeposit * 5)));
+            assert(layerBalance.eq(minDeposit * 5));
 
             // to-be solver makes a deposit
             await incentiveLayer.makeDeposit(minDeposit, {from: solver})
@@ -90,6 +92,8 @@ contract('IncentiveLayer', function(accounts) {
             assert(deposit.eq(minDeposit * 5))
 
             taskID = log.args.taskID
+            balance = await incentiveLayer.getTaskReward.call(taskID)
+            assert(balance.eq(reward))
         })
 
         it("should select a solver", async () => {
@@ -182,9 +186,10 @@ contract('IncentiveLayer', function(accounts) {
             
             tx = await incentiveLayer.finalizeTask(taskID, {from: taskGiver})
 
-            log = tx.logs.find(log => log.event = 'PayReward')
-            assert.equal(log.args.solver, solver)
-            assert(log.args.reward.eq(reward))
+            log = tx.logs.find(log => log.event = 'RewardClaimed')
+            assert(log.args.task.eq(taskID))
+            assert.equal(log.args.who, solver)
+            assert(log.args.amount.eq(reward))
 
             newBalance = await token.balanceOf(solver);
             assert(newBalance.gt(oldBalance))
@@ -246,11 +251,11 @@ contract('IncentiveLayer', function(accounts) {
         })
         it("should have participants make deposits", async () => {
             // taskGiver makes a deposit to fund taxes
-            await incentiveLayer.makeDeposit(reward + (minDeposit * 5), {from: taskGiver})
+            await incentiveLayer.makeDeposit(minDeposit * 5, {from: taskGiver})
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
-            assert(deposit.eq(reward + (minDeposit * 5)))
+            assert(deposit.eq(minDeposit * 5))
             let layerBalance = await token.balanceOf(incentiveLayer.address);
-            assert(layerBalance.eq(reward + (minDeposit * 5)));
+            assert(layerBalance.eq(minDeposit * 5));
 
             // to-be solver makes a deposit
             await incentiveLayer.makeDeposit(minDeposit, {from: solver})
@@ -283,6 +288,7 @@ contract('IncentiveLayer', function(accounts) {
             assert(log.args.minDeposit.eq(maxDifficulty * 2))
             assert(log.args.blockNumber.eq(5))
             assert(log.args.reward.eq(reward))
+            assert(log.args.tax.eq(minDeposit * 5))
 
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
             assert(deposit.eq(minDeposit * 5))
