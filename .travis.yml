@@ -2,17 +2,19 @@ dist: trusty
 sudo: required
 language: node_js
 node_js:
-  - "8.9"
+  - "9.4.0"
 
 matrix:
   include:
     - os: linux
       dist: trusty
       before_install: 
-      - npm install
+      - npm i -g ganache-cli@6.1.0
+      - ganache-cli &>/dev/null &
+        
 
 install:
-  - ganache-cli 2>&1 /dev/null &
+  - npm install
 
 script:
   - npm run migrate
