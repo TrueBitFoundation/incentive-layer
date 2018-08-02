@@ -129,8 +129,8 @@ contract('TaskExchange', function(accounts) {
 	it('should be higher than original balance', async () => {
 	    const newBalance = await web3.eth.getBalance(solver)
 
-	    console.log("Old balance: " + oldBalance)
-	    console.log("New Balance: " + newBalance)
+	    //console.log("Old balance: " + oldBalance)
+	    //console.log("New Balance: " + newBalance)
 
 	    assert((new BigNumber(oldBalance)).isLessThan(new BigNumber(newBalance)))
 	})
