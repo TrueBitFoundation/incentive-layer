@@ -165,7 +165,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         // if the task giver decides to bond the deposit and the
         // tax can not be collected. Perhaps a nother bonding
         // structure to escrow the taxes.
-        log0(keccak256(msg.sender)); // possible bug if log is after event
+        log0(keccak256(abi.encodePacked(msg.sender))); // possible bug if log is after event
         emit TaskCreated(numTasks, minDeposit, numBlocks, t.reward, t.tax);
         numTasks.add(1);
         return true;
@@ -260,7 +260,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         Task storage t = tasks[taskID];
         require(t.state == State.SolverSelected);
         require(block.number < t.taskCreationBlockNumber.add(t.numBlocks));
-        require(t.randomBitsHash == keccak256(originalRandomBits));
+        require(t.randomBitsHash == keccak256(abi.encodePacked(originalRandomBits)));
         uint bondedDeposit = t.bondedDeposits[t.selectedSolver];
         delete t.bondedDeposits[t.selectedSolver];
         deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit/2);
@@ -306,7 +306,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     // @param intent – submit 0 to challenge solution0, 1 to challenge solution1, anything else challenges both
     // @return – boolean
     function revealIntent(uint taskID, uint intent) public returns (bool) {
-        require(tasks[taskID].challenges[msg.sender] == keccak256(intent));
+        require(tasks[taskID].challenges[msg.sender] == keccak256(abi.encodePacked(intent)));
         require(tasks[taskID].state == State.ChallengesAccepted);
         uint solution = 0;
         uint position = 0;
@@ -334,7 +334,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     // @return – boolean
     function revealSolution(uint taskID, bool solution0Correct, uint originalRandomBits) public {
         Task storage t = tasks[taskID];
-        require(t.randomBitsHash == keccak256(originalRandomBits));
+        require(t.randomBitsHash == keccak256(abi.encodePacked(originalRandomBits)));
         require(t.state == State.IntentsRevealed);
         require(t.selectedSolver == msg.sender);
         solutions[taskID].solution0Correct = solution0Correct;
@@ -350,7 +350,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     }
 
     function isForcedError(uint randomBits) internal view returns (bool) {
-        return (uint(keccak256(randomBits, blockhash(block.number))) < forcedErrorThreshold);
+        return (uint(keccak256(abi.encodePacked(randomBits, blockhash(block.number)))) < forcedErrorThreshold);
     }
 
     function rewardJackpot(uint taskID) internal {
