@@ -31,22 +31,22 @@ contract DisputeResolutionLayerDummy is IDisputeResolutionLayer {
 	uint taskID;
 	address solver;
 	address verifier;
-	bytes32 initHash;
-	bytes32 result;
+	bytes32 startStateHash;
+	bytes32 endStateHash;
 	uint size;
 	uint timeout;
     }
 
     mapping(bytes32 => Game2) private games2;
 
-    function make(uint taskID, address solver, address verifier, bytes32 initHash, bytes32 result, uint256 size, uint timeout) external returns (bytes32) {
-	bytes32 gameID = keccak256(p, c, s, e, par, to);
+    function make(uint taskID, address solver, address verifier, bytes32 startStateHash, bytes32 endStateHash, uint256 size, uint timeout) external returns (bytes32) {
+	bytes32 gameID = keccak256(solver, verifier, startStateHash, endStateHash, size, timeout);
 	Game2 storage g = games2[gameID];
-	g.taskID = task_id;
+	g.taskID = taskID;
 	g.solver = solver;
 	g.verifier = verifier;
-	g.initHash = initHash;
-	g.result = result;
+	g.startStateHash = startStateHash;
+	g.endStateHash = endStateHash;
 	g.size = size;
 	g.timeout = timeout;
 	return gameID;
