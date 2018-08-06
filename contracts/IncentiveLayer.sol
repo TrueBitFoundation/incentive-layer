@@ -5,6 +5,8 @@ import "./JackpotManager.sol";
 import "./TRU.sol";
 import "./ExchangeRateOracle.sol";
 import "./RewardsManager.sol";
+import "./IGameMaker.sol";
+import "./IDisputeResolutionLayer.sol";
 
 contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 
@@ -26,6 +28,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     event PayReward(address indexed solver, uint reward);
 
     enum State { TaskInitialized, SolverSelected, SolutionComitted, ChallengesAccepted, IntentsRevealed, SolutionRevealed, TaskFinalized, TaskTimeout }
+    enum Status { Uninitialized, Challenged, Unresolved, SolverWon, ChallengerWon }//For dispute resolution
 
     struct Task {
         address owner;
@@ -56,6 +59,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         address[] allChallengers;
         uint currentChallenger;
         bool solverConvicted;
+	bytes32 currentGame;
     }
 
     mapping(uint => Task) private tasks;
@@ -64,13 +68,15 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     uint8[8] private timeoutWeights = [1, 20, 30, 35, 40, 45, 50, 55]; // one timeout per state in the FSM
 
     ExchangeRateOracle oracle;
+    address disputeResolutionLayer; //using address type because in some cases it is IGameMaker, and others IDisputeResolutionLayer
 
-    constructor (address _TRU, address _exchangeRateOracle) 
+    constructor (address _TRU, address _exchangeRateOracle, address _disputeResolutionLayer) 
         DepositsManager(_TRU) 
-        JackpotManager(_TRU) 
-        RewardsManager(_TRU)  
+        JackpotManager(_TRU)
+        RewardsManager(_TRU)
         public 
     {
+	disputeResolutionLayer = _disputeResolutionLayer;
         oracle = ExchangeRateOracle(_exchangeRateOracle);
     }
 
@@ -163,7 +169,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         // LOOK AT: May be some problem if tax amount is also not bonded
         // but still submitted through makeDeposit. For example,
         // if the task giver decides to bond the deposit and the
-        // tax can not be collected. Perhaps a nother bonding
+        // tax can not be collected. Perhaps another bonding
         // structure to escrow the taxes.
         log0(keccak256(abi.encodePacked(msg.sender))); // possible bug if log is after event
         emit TaskCreated(numTasks, minDeposit, numBlocks, t.reward, t.tax);
@@ -275,7 +281,6 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 
         return true;
     }
-        
 
     function taskGiverTimeout(uint taskID) public {
         Task storage t = tasks[taskID];
@@ -357,8 +362,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
         t.jackpotID = setJackpotReceivers(s.allChallengers);
-        //t.owner.transfer(t.reward); // send reward back to task giver as it was never used
-        payReward(taskID, t.owner);
+
+        payReward(taskID, t.owner);//Still compensating solver even though solution wasn't thoroughly verified, task giver recommended to not use solution
     }
 
     // verifier should be responsible for calling this first
@@ -367,40 +372,35 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         require(t.state == State.SolutionRevealed);
         Solution storage s = solutions[taskID];
         if (s.solution0Correct) {
-            s.solverConvicted = verificationGame(t.selectedSolver, s.solution0Challengers[s.currentChallenger], t.taskData, s.solutionHash0);
+            verificationGame(taskID, t.selectedSolver, s.solution0Challengers[s.currentChallenger], t.taskData, s.solutionHash0);
         } else {
-            s.solverConvicted = verificationGame(t.selectedSolver, s.solution1Challengers[s.currentChallenger], t.taskData, s.solutionHash1);
+            verificationGame(taskID, t.selectedSolver, s.solution1Challengers[s.currentChallenger], t.taskData, s.solutionHash1);
         }
         s.currentChallenger = s.currentChallenger + 1;
         emit VerificationGame(t.selectedSolver, s.currentChallenger);
     }
 
-    function verificationGame(address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal pure returns (bool) {
-        solver;
-        challenger;
-        taskData;
-        solutionHash;
-        // noop
-        return false;
+    function verificationGame(uint taskID, address solver, address challenger, bytes32 taskData, bytes32 solutionHash) internal {
+	uint size = 1;
+	bytes32 gameID = IGameMaker(disputeResolutionLayer).make(taskID, solver, challenger, 0x0, solutionHash, 1, 100);
+	solutions[taskID].currentGame = gameID;
     }
 
     function finalizeTask(uint taskID) public {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
-        require(s.currentChallenger >= s.solution0Challengers.length || s.currentChallenger >= s.solution1Challengers.length);
+        require(s.currentChallenger >= s.solution0Challengers.length
+		|| s.currentChallenger >= s.solution1Challengers.length
+		&& IDisputeResolutionLayer(disputeResolutionLayer).status(s.currentGame) == uint(Status.SolverWon));
+	
         t.state = State.TaskFinalized;
         t.finalityCode = 1; // Task has been completed
-        //distributeReward(t);
+
         payReward(taskID, t.selectedSolver);
     }
 
     function getTaskFinality(uint taskID) public view returns (uint) {
         return tasks[taskID].finalityCode;
-    }
-
-    function distributeReward(Task t) internal {
-        token.transfer(t.selectedSolver, t.reward);
-        emit PayReward(t.selectedSolver, t.reward);
     }
 
 }

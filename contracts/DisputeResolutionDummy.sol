@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "./IDisputeResolutionLayer.sol";
 import "./IGameMaker.sol";
 
-contract DisputeResolutionLayerDummy is IDisputeResolutionLayer {
+contract DisputeResolutionLayerDummy is IDisputeResolutionLayer, IGameMaker {
 
     enum State { Uninitialized, Challenged, Unresolved, SolverWon, ChallengerWon }
 
