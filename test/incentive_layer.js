@@ -76,7 +76,7 @@ contract('IncentiveLayer', function(accounts) {
         it("should create task", async () => {
             // taskGiver creates a task.
             // they bond part of their deposit.
-            tx = await incentiveLayer.createTask(0x0, 0, 0, 0x0, maxDifficulty, 0x0, 5, reward, {from: taskGiver})
+            tx = await incentiveLayer.createTask(0x0, 0, 0, 0x0, maxDifficulty, reward, {from: taskGiver})
 
             //log = tx.logs.find(log => log.event === 'DepositBonded')
             //assert(log.args.taskID.eq(0))
@@ -86,9 +86,12 @@ contract('IncentiveLayer', function(accounts) {
             log = tx.logs.find(log => log.event === 'TaskCreated')
             assert(log.args.taskID.isZero())
             assert(log.args.minDeposit.eq(minDeposit))
-            assert(log.args.blockNumber.eq(5))
+            //assert(log.args.blockNumber.eq(5))
             assert(log.args.reward.eq(reward))
             assert(log.args.tax.eq(minDeposit * 5))
+	    assert(log.args.codeType.eq(0))
+	    assert(log.args.storageType.eq(0))
+	    assert(log.args.storageAddress == 0x0)
 
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
             assert(deposit.eq(minDeposit * 5))
