@@ -197,7 +197,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     // @return – boolean
     function changeTaskState(uint taskID, uint newState) public returns (bool) {
         Task storage t = tasks[taskID];
-        require(stateChangeTimeoutReached(taskID));
+        //require(stateChangeTimeoutReached(taskID));
         t.state = State(newState);
         emit TaskStateChange(taskID, newState);
         return true;
