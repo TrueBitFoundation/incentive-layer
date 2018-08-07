@@ -1,6 +1,7 @@
 const IncentiveLayer = artifacts.require('./IncentiveLayer.sol')
 const TRU = artifacts.require('./TRU.sol')
 const ExchangeRateOracle = artifacts.require('./ExchangeRateOracle.sol')
+const DisputeResolutionLayer = artifacts.require('./DisputeResolutionLayerDummy.sol')
 const Web3 = require('web3')
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 
@@ -31,7 +32,8 @@ contract('IncentiveLayer', function(accounts) {
         before(async () => {
             token = await TRU.new({from: accounts[5]}); 
             oracle = await ExchangeRateOracle.new({from: oracleOwner});
-            incentiveLayer = await IncentiveLayer.new(token.address, oracle.address);
+	    disputeResolutionLayer = await DisputeResolutionLayer.new({from: accounts[5]})
+            incentiveLayer = await IncentiveLayer.new(token.address, oracle.address, disputeResolutionLayer.address);
             await token.transferOwnership(incentiveLayer.address, {from: accounts[5]})
             let owner = await token.owner();
             assert.equal(owner, incentiveLayer.address);
@@ -74,7 +76,7 @@ contract('IncentiveLayer', function(accounts) {
         it("should create task", async () => {
             // taskGiver creates a task.
             // they bond part of their deposit.
-            tx = await incentiveLayer.createTask(maxDifficulty, 0x0, 5, reward, {from: taskGiver})
+            tx = await incentiveLayer.createTask(0x0, 0, 0, 0x0, maxDifficulty, 0x0, 5, reward, {from: taskGiver})
 
             //log = tx.logs.find(log => log.event === 'DepositBonded')
             //assert(log.args.taskID.eq(0))
