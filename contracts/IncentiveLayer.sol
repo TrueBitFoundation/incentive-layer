@@ -24,14 +24,22 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     enum StorageType {
         IPFS,
         BLOCKCHAIN
-    }    
+    }
+
+    struct VMParameters {
+	uint8 stackSize;
+	uint8 memorySize;
+	uint8 callSize;
+	uint8 globalsSize;
+	uint8 tableSize;
+    }
 
     event DepositBonded(uint taskID, address account, uint amount);
     event DepositUnbonded(uint taskID, address account, uint amount);
     event BondedDepositMovedToJackpot(uint taskID, address account, uint amount);
     event TaskCreated(uint taskID, uint minDeposit, uint blockNumber, uint reward, uint tax, CodeType codeType, StorageType storageType, string storageAddress);
     event SolverSelected(uint indexed taskID, address solver, bytes32 taskData, uint minDeposit, bytes32 randomBitsHash);
-    event SolutionsCommitted(uint taskID, uint minDeposit, bytes32 taskData, bytes32 solutionHash0, bytes32 solutionHash1);
+    event SolutionsCommitted(uint taskID, uint minDeposit, CodeType codeType, StorageType storageType, string storageAddress);
     event SolutionRevealed(uint taskID, uint randomBits);
     event TaskStateChange(uint taskID, uint state);
     event VerificationCommitted(address verifier, uint jackpotID, uint solutionID, uint index);
@@ -78,6 +86,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 
     mapping(uint => Task) private tasks;
     mapping(uint => Solution) private solutions;
+    mapping(uint => VMParameters) private vmParams;
 
     ExchangeRateOracle oracle;
     address disputeResolutionLayer; //using address type because in some cases it is IGameMaker, and others IDisputeResolutionLayer
@@ -152,6 +161,15 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         return tasks[taskID].bondedDeposits[account];
     }
 
+    function defaultParameters(uint taskID) internal {
+	VMParameters storage params = vmParams[taskID];
+	params.stackSize = 14;
+	params.memorySize = 16;
+	params.globalsSize = 8;
+	params.tableSize = 8;
+	params.callSize = 10;
+    }
+
     // @dev – taskGiver creates tasks to be solved.
     // @param minDeposit – the minimum deposit required for engaging with a task as a solver or verifier.
     // @param reward - the payout given to solver
@@ -179,6 +197,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 	t.codeType = codeType;
 	t.storageType = storageType;
 	t.storageAddress = storageAddress;
+	defaultParameters(numTasks);
         
         // LOOK AT: May be some problem if tax amount is also not bonded
         // but still submitted through makeDeposit. For example,
@@ -268,7 +287,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         s.solutionHash1 = solutionHash1;
         s.solverConvicted = false;
         t.state = State.SolutionComitted;
-        emit SolutionsCommitted(taskID, t.minDeposit, t.initTaskHash, s.solutionHash0, s.solutionHash1);
+        emit SolutionsCommitted(taskID, t.minDeposit, t.codeType, t.storageType, t.storageAddress);
         return true;
     }
 
@@ -416,6 +435,22 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 
     function getTaskFinality(uint taskID) public view returns (uint) {
         return tasks[taskID].finalityCode;
+    }
+
+    function getVMParameters(uint taskID) public view returns (uint8, uint8, uint8, uint8, uint8) {
+	VMParameters storage params = vmParams[taskID];
+	return (params.stackSize, params.memorySize, params.globalsSize, params.tableSize, params.callSize);
+    }
+
+    function getTaskInfo(uint taskID) public view returns (address, bytes32, CodeType, StorageType, string, uint) {
+	Task storage t = tasks[taskID];
+	return (t.owner, t.initTaskHash, t.codeType, t.storageType, t.storageAddress, taskID);
+    }
+
+    function getSolutionInfo(uint taskID) public view returns(uint, bytes32, bytes32, bytes32, CodeType, StorageType, string, address) {
+	Task storage t = tasks[taskID];
+	Solution storage s = solutions[taskID];
+	return (taskID, s.solutionHash0, s.solutionHash1, t.initTaskHash, t.codeType, t.storageType, t.storageAddress, t.selectedSolver);
     }
 
 }

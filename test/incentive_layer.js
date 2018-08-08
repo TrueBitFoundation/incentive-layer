@@ -92,7 +92,6 @@ contract('IncentiveLayer', function(accounts) {
 	    assert(log.args.codeType.eq(0))
 	    assert(log.args.storageType.eq(0))
 	    assert(log.args.storageAddress == 0x0)
-	    assert.equal(log.args.initTaskHash == 0x0)
 
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
             assert(deposit.eq(minDeposit * 5))
@@ -128,7 +127,7 @@ contract('IncentiveLayer', function(accounts) {
 		codeType: t[2],
 		storageType: t[3],
 		storageAddress: t[4],
-		taskID: t[5]
+		taskID: t[5].toNumber()
 	    }
 
 	    assert.equal(taskInfo.taskGiver, taskGiver)
@@ -174,9 +173,9 @@ contract('IncentiveLayer', function(accounts) {
 	    let s = await incentiveLayer.getSolutionInfo.call(taskID) 
 
 	    let solutionInfo = {
-		taskID: s[0],
-		solution0Hash: s[1],
-		solution1Hash: s[2],
+		taskID: s[0].toNumber(),
+		solutionHash0: s[1],
+		solutionHash1: s[2],
 		taskInitHash: s[3],
 		codeType: s[4],
 		storageType: s[5],
@@ -185,8 +184,8 @@ contract('IncentiveLayer', function(accounts) {
 	    }
 
 	    assert.equal(solutionInfo.taskID, taskID)
-	    assert.equal(solutionInfo.solution0Hash, web3.utils.soliditySha3(0x0))
-	    assert.equal(solutionInfo.solution1Hash, web3.utils.soliditySha3(0x12345))
+	    assert.equal(solutionInfo.solutionHash0, web3.utils.soliditySha3(0x0))
+	    assert.equal(solutionInfo.solutionHash1, web3.utils.soliditySha3(0x12345))
 	    assert.equal(solutionInfo.taskInitHash, 0x0)
 	    assert.equal(solutionInfo.codeType, 0)
 	    assert.equal(solutionInfo.storageType, 0)
