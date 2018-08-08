@@ -92,6 +92,7 @@ contract('IncentiveLayer', function(accounts) {
 	    assert(log.args.codeType.eq(0))
 	    assert(log.args.storageType.eq(0))
 	    assert(log.args.storageAddress == 0x0)
+	    assert.equal(log.args.initTaskHash == 0x0)
 
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
             assert(deposit.eq(minDeposit * 5))
@@ -100,6 +101,14 @@ contract('IncentiveLayer', function(accounts) {
             balance = await incentiveLayer.getTaskReward.call(taskID)
             assert(balance.eq(reward))
         })
+
+	it("should get vm parameters", async () => {
+	    assert(await incentiveLayer.getVMParameters.call(taskID))
+	})
+
+	it("should get task info", async () => {
+	    assert(await incentiveLayer.getTaskInfo.call(taskID))
+	})
 
         it("should select a solver", async () => {
             // solver registers for the task.
@@ -115,9 +124,7 @@ contract('IncentiveLayer', function(accounts) {
 
             log = tx.logs.find(log => log.event === 'SolverSelected')
             assert(log.args.taskID.eq(taskID))
-            assert.equal(log.args.solver, solver)
-            assert.equal(log.args.taskData, 0x0)
-            assert(log.args.minDeposit.eq(minDeposit))
+            assert.equal(log.args.solver, solver)            
             assert.equal(log.args.randomBitsHash, web3.utils.soliditySha3(randomBits))
 
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
@@ -130,7 +137,14 @@ contract('IncentiveLayer', function(accounts) {
             log = tx.logs.find(log => log.event === 'SolutionsCommitted')
             assert(log.args.taskID.eq(taskID))
             assert(log.args.minDeposit.eq(minDeposit))
+	    assert.equal(log.args.storageAddress, 0x0)
+	    assert.equal(log.args.storageType, 0)
+	    assert.equal(log.args.codeType, 0)
         })
+
+	it("should get solution info", async () => {
+	    assert(await incentiveLayer.getSolutionInfo.call(taskID))
+	})
 
         it("should commit a challenge", async () => {
             // verifier commits a challenge
@@ -210,11 +224,6 @@ contract('IncentiveLayer', function(accounts) {
             assert((await incentiveLayer.getDeposit.call(solver)).eq(minDeposit))
         })
 
-//        it('should unbond task giver deposit', async () => {
-//          await incentiveLayer.unbondDeposit(taskID, {from: taskGiver})
-//          assert((await incentiveLayer.getDeposit.call(taskGiver)).eq(minDeposit))
-//        })
-
         it('should unbond verifier deposit', async () => {
           await incentiveLayer.unbondDeposit(taskID, {from: verifier})
           //assert((await incentiveLayer.getDeposit.call(verifier)).eq(0))
@@ -258,6 +267,7 @@ contract('IncentiveLayer', function(accounts) {
             await token.approve(incentiveLayer.address, minDeposit, {from: backupSolver})
 
         })
+	
         it("should have participants make deposits", async () => {
             // taskGiver makes a deposit to fund taxes
             await incentiveLayer.makeDeposit(minDeposit * 5, {from: taskGiver})
