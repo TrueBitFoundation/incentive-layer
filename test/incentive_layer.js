@@ -11,7 +11,7 @@ const mineBlocks = require('./helpers/mineBlocks')
 const BigNumber = require('bignumber.js')
 
 contract('IncentiveLayer', function(accounts) {
-    let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance, token, oracle, balance
+    let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance, token, oracle, balance, disputeResolutionLayer
 
     const taskGiver = accounts[1]
     const solver = accounts[2]
