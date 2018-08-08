@@ -103,11 +103,39 @@ contract('IncentiveLayer', function(accounts) {
         })
 
 	it("should get vm parameters", async () => {
-	    assert(await incentiveLayer.getVMParameters.call(taskID))
+	    let p = await incentiveLayer.getVMParameters.call(taskID)
+	    let params = {
+		stackSize: p[0],
+		memorySize: p[1],
+		globalsSize: p[2],
+		tableSize: p[3],
+		callSize: p[4]
+	    }
+
+	    //Testing for default parameters
+	    assert.equal(params.stackSize, 14)
+	    assert.equal(params.memorySize, 16)
+	    assert.equal(params.globalsSize, 8)
+	    assert.equal(params.tableSize, 8)
+	    assert.equal(params.callSize, 10)
 	})
 
 	it("should get task info", async () => {
-	    assert(await incentiveLayer.getTaskInfo.call(taskID))
+	    let t = await incentiveLayer.getTaskInfo.call(taskID) 
+	    let taskInfo = {
+		taskGiver: t[0],
+		taskInitHash: t[1],
+		codeType: t[2],
+		storageType: t[3],
+		storageAddress: t[4],
+		taskID: t[5]
+	    }
+
+	    assert.equal(taskInfo.taskGiver, taskGiver)
+	    assert.equal(taskInfo.taskInitHash, 0x0)
+	    assert.equal(taskInfo.codeType, 0)
+	    assert.equal(taskInfo.storageType, 0)
+	    assert.equal(taskInfo.taskID, taskID)
 	})
 
         it("should select a solver", async () => {
@@ -143,7 +171,27 @@ contract('IncentiveLayer', function(accounts) {
         })
 
 	it("should get solution info", async () => {
-	    assert(await incentiveLayer.getSolutionInfo.call(taskID))
+	    let s = await incentiveLayer.getSolutionInfo.call(taskID) 
+
+	    let solutionInfo = {
+		taskID: s[0],
+		solution0Hash: s[1],
+		solution1Hash: s[2],
+		taskInitHash: s[3],
+		codeType: s[4],
+		storageType: s[5],
+		storageAddress: s[6],
+		solver: s[7]
+	    }
+
+	    assert.equal(solutionInfo.taskID, taskID)
+	    assert.equal(solutionInfo.solution0Hash, web3.utils.soliditySha3(0x0))
+	    assert.equal(solutionInfo.solution1Hash, web3.utils.soliditySha3(0x12345))
+	    assert.equal(solutionInfo.taskInitHash, 0x0)
+	    assert.equal(solutionInfo.codeType, 0)
+	    assert.equal(solutionInfo.storageType, 0)
+	    assert.equal(solutionInfo.storageAddress, 0x0)
+	    assert.equal(solutionInfo.solver, solver)
 	})
 
         it("should commit a challenge", async () => {
