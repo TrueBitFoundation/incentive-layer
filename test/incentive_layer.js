@@ -1,6 +1,9 @@
 const IncentiveLayer = artifacts.require('./IncentiveLayer.sol')
 const TRU = artifacts.require('./TRU.sol')
 const ExchangeRateOracle = artifacts.require('./ExchangeRateOracle.sol')
+
+const DisputeResolutionLayer = artifacts.require('./DisputeResolutionLayerDummy.sol')
+
 const Web3 = require('web3')
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 
@@ -10,7 +13,8 @@ const mineBlocks = require('./helpers/mineBlocks')
 const BigNumber = require('bignumber.js')
 
 contract('IncentiveLayer', function(accounts) {
-    let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance, token, oracle, balance
+
+    let incentiveLayer, deposit, bond, tx, log, taskID, intent, oldBalance, token, oracle, balance, disputeResolutionLayer    
 
     const taskGiver = accounts[1]
     const solver = accounts[2]
@@ -31,7 +35,10 @@ contract('IncentiveLayer', function(accounts) {
         before(async () => {
             token = await TRU.new({from: accounts[5]}); 
             oracle = await ExchangeRateOracle.new({from: oracleOwner});
-            incentiveLayer = await IncentiveLayer.new(token.address, oracle.address);
+
+	    disputeResolutionLayer = await DisputeResolutionLayer.new({from: accounts[5]})
+            incentiveLayer = await IncentiveLayer.new(token.address, oracle.address, disputeResolutionLayer.address)
+	    
             await token.transferOwnership(incentiveLayer.address, {from: accounts[5]})
             let owner = await token.owner();
             assert.equal(owner, incentiveLayer.address);
@@ -74,7 +81,8 @@ contract('IncentiveLayer', function(accounts) {
         it("should create task", async () => {
             // taskGiver creates a task.
             // they bond part of their deposit.
-            tx = await incentiveLayer.createTask(maxDifficulty, 0x0, 5, reward, {from: taskGiver})
+
+            tx = await incentiveLayer.createTask(0x0, 0, 0, 0x0, maxDifficulty, reward, {from: taskGiver})
 
             //log = tx.logs.find(log => log.event === 'DepositBonded')
             //assert(log.args.taskID.eq(0))
@@ -84,9 +92,13 @@ contract('IncentiveLayer', function(accounts) {
             log = tx.logs.find(log => log.event === 'TaskCreated')
             assert(log.args.taskID.isZero())
             assert(log.args.minDeposit.eq(minDeposit))
-            assert(log.args.blockNumber.eq(5))
+
+            //assert(log.args.blockNumber.eq(5))
             assert(log.args.reward.eq(reward))
             assert(log.args.tax.eq(minDeposit * 5))
+	    assert(log.args.codeType.eq(0))
+	    assert(log.args.storageType.eq(0))
+	    assert(log.args.storageAddress == 0x0)
 
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
             assert(deposit.eq(minDeposit * 5))
@@ -95,6 +107,43 @@ contract('IncentiveLayer', function(accounts) {
             balance = await incentiveLayer.getTaskReward.call(taskID)
             assert(balance.eq(reward))
         })
+
+
+	it("should get vm parameters", async () => {
+	    let p = await incentiveLayer.getVMParameters.call(taskID)
+	    let params = {
+		stackSize: p[0],
+		memorySize: p[1],
+		globalsSize: p[2],
+		tableSize: p[3],
+		callSize: p[4]
+	    }
+
+	    //Testing for default parameters
+	    assert.equal(params.stackSize, 14)
+	    assert.equal(params.memorySize, 16)
+	    assert.equal(params.globalsSize, 8)
+	    assert.equal(params.tableSize, 8)
+	    assert.equal(params.callSize, 10)
+	})
+
+	it("should get task info", async () => {
+	    let t = await incentiveLayer.getTaskInfo.call(taskID) 
+	    let taskInfo = {
+		taskGiver: t[0],
+		taskInitHash: t[1],
+		codeType: t[2],
+		storageType: t[3],
+		storageAddress: t[4],
+		taskID: t[5].toNumber()
+	    }
+
+	    assert.equal(taskInfo.taskGiver, taskGiver)
+	    assert.equal(taskInfo.taskInitHash, 0x0)
+	    assert.equal(taskInfo.codeType, 0)
+	    assert.equal(taskInfo.storageType, 0)
+	    assert.equal(taskInfo.taskID, taskID)
+	})
 
         it("should select a solver", async () => {
             // solver registers for the task.
@@ -113,6 +162,7 @@ contract('IncentiveLayer', function(accounts) {
             assert.equal(log.args.solver, solver)
             assert.equal(log.args.taskData, 0x0)
             assert(log.args.minDeposit.eq(minDeposit))
+
             assert.equal(log.args.randomBitsHash, web3.utils.soliditySha3(randomBits))
 
             deposit = await incentiveLayer.getDeposit.call(taskGiver)
@@ -125,7 +175,35 @@ contract('IncentiveLayer', function(accounts) {
             log = tx.logs.find(log => log.event === 'SolutionsCommitted')
             assert(log.args.taskID.eq(taskID))
             assert(log.args.minDeposit.eq(minDeposit))
+
+	    assert.equal(log.args.storageAddress, 0x0)
+	    assert.equal(log.args.storageType, 0)
+	    assert.equal(log.args.codeType, 0)
         })
+
+	it("should get solution info", async () => {
+	    let s = await incentiveLayer.getSolutionInfo.call(taskID) 
+
+	    let solutionInfo = {
+		taskID: s[0].toNumber(),
+		solutionHash0: s[1],
+		solutionHash1: s[2],
+		taskInitHash: s[3],
+		codeType: s[4],
+		storageType: s[5],
+		storageAddress: s[6],
+		solver: s[7]
+	    }
+
+	    assert.equal(solutionInfo.taskID, taskID)
+	    assert.equal(solutionInfo.solutionHash0, web3.utils.soliditySha3(0x0))
+	    assert.equal(solutionInfo.solutionHash1, web3.utils.soliditySha3(0x12345))
+	    assert.equal(solutionInfo.taskInitHash, 0x0)
+	    assert.equal(solutionInfo.codeType, 0)
+	    assert.equal(solutionInfo.storageType, 0)
+	    assert.equal(solutionInfo.storageAddress, 0x0)
+	    assert.equal(solutionInfo.solver, solver)
+	})
 
         it("should commit a challenge", async () => {
             // verifier commits a challenge
@@ -138,8 +216,11 @@ contract('IncentiveLayer', function(accounts) {
             assert(log.args.amount.eq(minDeposit))
             deposit = await incentiveLayer.getDeposit.call(verifier)
             assert(deposit.eq(0))
+	})
 
-            await mineBlocks(web3, 20)
+	it("should change task state to 3", async () => {
+
+            await mineBlocks(web3, 20)	    
 
             // solver triggers task state transition as he wants solution to be finalized
             tx = await incentiveLayer.changeTaskState(taskID, 3, {from: solver})
@@ -202,11 +283,6 @@ contract('IncentiveLayer', function(accounts) {
             assert((await incentiveLayer.getDeposit.call(solver)).eq(minDeposit))
         })
 
-//        it('should unbond task giver deposit', async () => {
-//          await incentiveLayer.unbondDeposit(taskID, {from: taskGiver})
-//          assert((await incentiveLayer.getDeposit.call(taskGiver)).eq(minDeposit))
-//        })
-
         it('should unbond verifier deposit', async () => {
           await incentiveLayer.unbondDeposit(taskID, {from: verifier})
           //assert((await incentiveLayer.getDeposit.call(verifier)).eq(0))
@@ -221,19 +297,14 @@ contract('IncentiveLayer', function(accounts) {
 
     context('arbit penalty', () => {
         before(async () => {
-            //token = await TRU.new();
-            //oracle = await ExchangeRateOracle.new({from: oracleOwner})
-            //await oracle.updateExchangeRate(2000, {from: oracleOwner})
-            //incentiveLayer = await IncentiveLayer.new(token.address, oracle.address)
-            //oldBalance = await web3.eth.getBalance(solver)
             
-            token = await TRU.new({from: accounts[5]}); 
-            oracle = await ExchangeRateOracle.new({from: oracleOwner});
-            incentiveLayer = await IncentiveLayer.new(token.address, oracle.address);
+            token = await TRU.new({from: accounts[5]})
+            oracle = await ExchangeRateOracle.new({from: oracleOwner})
+	    disputeResolutionLayer = await DisputeResolutionLayer.new({from: accounts[5]})
+            incentiveLayer = await IncentiveLayer.new(token.address, oracle.address, disputeResolutionLayer.address)
             await token.transferOwnership(incentiveLayer.address, {from: accounts[5]})
-            let owner = await token.owner();
-            assert.equal(owner, incentiveLayer.address);
-
+            let owner = await token.owner()
+            assert.equal(owner, incentiveLayer.address)
 
             oldBalance = await web3.eth.getBalance(solver)
 
@@ -249,6 +320,7 @@ contract('IncentiveLayer', function(accounts) {
             await token.approve(incentiveLayer.address, minDeposit, {from: backupSolver})
 
         })
+
         it("should have participants make deposits", async () => {
             // taskGiver makes a deposit to fund taxes
             await incentiveLayer.makeDeposit(minDeposit * 5, {from: taskGiver})
@@ -276,8 +348,8 @@ contract('IncentiveLayer', function(accounts) {
         it("should create task", async () => {
             // taskGiver creates a task.
             // they bond part of their deposit.
-            tx = await incentiveLayer.createTask(maxDifficulty, 0x0, 5, reward, {from: taskGiver})
 
+	    tx = await incentiveLayer.createTask(0x0, 0, 0, 0x0, maxDifficulty, reward, {from: taskGiver})            
             //log = tx.logs.find(log => log.event === 'DepositBonded')
             //assert(log.args.taskID.eq(0))
             //assert.equal(log.args.account, taskGiver)
@@ -335,7 +407,8 @@ contract('IncentiveLayer', function(accounts) {
             log = tx.logs.find(log => log.event == 'TaskCreated')
             assert(log.args.taskID.isZero())
             assert(log.args.minDeposit.eq(minDeposit))
-            assert(log.args.blockNumber.eq(5))
+
+            //assert(log.args.blockNumber.eq(5))
             assert(log.args.reward.eq(reward))
 
             deposit = await incentiveLayer.getBondedDeposit.call(taskID, solver)

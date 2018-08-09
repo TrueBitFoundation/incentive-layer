@@ -1,26 +1,29 @@
 const TRU = artifacts.require('TRU.sol');
-const ExchangeRateOracle = artifacts.require('./ExchangeRateOracle.sol');
-const IncentiveLayer = artifacts.require('IncentiveLayer.sol');
+
+const ExchangeRateOracle = artifacts.require('./ExchangeRateOracle.sol')
+const IncentiveLayer = artifacts.require('IncentiveLayer.sol')
+const DisputeResolutionLayer = artifacts.require('./DisputeResolutionLayerDummy.sol')
 const Web3 = require('web3');
-const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 
 contract('DepositsManager', function(accounts) {
-  let depositsManager, token, oracle;
+
+    let depositsManager, token, oracle, disputeResolutionLayer
 
     beforeEach(async () => {
-        token = await TRU.new();
+        token = await TRU.new()
         oracle = await ExchangeRateOracle.new()
-        depositsManager = await IncentiveLayer.new(token.address, oracle.address);
+	disputeResolutionLayer = await DisputeResolutionLayer.new({from: accounts[5]})
+        depositsManager = await IncentiveLayer.new(token.address, oracle.address, disputeResolutionLayer.address)
         // get some tokens and allow transfer
         await token.sendTransaction({from: accounts[1], value: web3.utils.toWei('1', 'ether')})
         await token.approve(depositsManager.address, 1000, {from: accounts[1]})
     })
 
+
     describe('makeDeposit', () => {
         it('should make a deposit', async () => {
-            let tx
-
-            tx = await depositsManager.makeDeposit(1000, {from: accounts[1]})
+            let tx = await depositsManager.makeDeposit(1000, {from: accounts[1]})
             log = tx.logs.find(log => log.event === 'DepositMade')
             assert.equal(log.args.who, accounts[1])
             assert(log.args.amount.eq(1000))
