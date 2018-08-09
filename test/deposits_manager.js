@@ -1,4 +1,5 @@
 const TRU = artifacts.require('TRU.sol');
+
 const ExchangeRateOracle = artifacts.require('./ExchangeRateOracle.sol')
 const IncentiveLayer = artifacts.require('IncentiveLayer.sol')
 const DisputeResolutionLayer = artifacts.require('./DisputeResolutionLayerDummy.sol')
@@ -6,6 +7,7 @@ const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 
 contract('DepositsManager', function(accounts) {
+
     let depositsManager, token, oracle, disputeResolutionLayer
 
     beforeEach(async () => {
@@ -17,6 +19,7 @@ contract('DepositsManager', function(accounts) {
         await token.sendTransaction({from: accounts[1], value: web3.utils.toWei('1', 'ether')})
         await token.approve(depositsManager.address, 1000, {from: accounts[1]})
     })
+
 
     describe('makeDeposit', () => {
         it('should make a deposit', async () => {

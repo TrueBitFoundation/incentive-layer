@@ -2,14 +2,14 @@ const TRU = artifacts.require('TRU.sol');
 const IncentiveLayer = artifacts.require('IncentiveLayer.sol')
 const ExchangeRateOracle = artifacts.require('ExchangeRateOracle.sol')
 const DisputeResolutionLayer = artifacts.require('./DisputeResolutionLayerDummy.sol')
-
 const Web3 = require('web3')
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 const mineBlocks = require('./helpers/mineBlocks')
 
 contract('IncentiveLayer Timeouts', function(accounts) {
-    let incentiveLayer, deposit, bond, tx, log, taskID, intent, token, oracle, disputeResolutionLayer
 
+    let incentiveLayer, deposit, bond, tx, log, taskID, intent, token, oracle, disputeResolutionLayer
+    
     const taskGiver = accounts[1]
     const solver = accounts[2]
     const verifier = accounts[3]
@@ -39,7 +39,7 @@ contract('IncentiveLayer Timeouts', function(accounts) {
 
 	    await incentiveLayer.makeDeposit(minDeposit * 2 * 5,{from: taskGiver})
 	    await incentiveLayer.makeDeposit(minDeposit * 2, {from: solver})
-	    	    
+	    
 	})
 
 	it('should create a task', async () => {

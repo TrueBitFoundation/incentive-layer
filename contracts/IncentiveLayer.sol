@@ -5,6 +5,7 @@ import "./JackpotManager.sol";
 import "./TRU.sol";
 import "./ExchangeRateOracle.sol";
 import "./RewardsManager.sol";
+
 import "./IGameMaker.sol";
 import "./IDisputeResolutionLayer.sol";
 
@@ -13,6 +14,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     uint private numTasks = 0;
     uint private forcedErrorThreshold = 42;
     uint private taxMultiplier = 5;
+
     uint constant TIMEOUT = 100;
 
     enum CodeType {
@@ -98,6 +100,17 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         public 
     {
 	disputeResolutionLayer = _disputeResolutionLayer;
+        oracle = ExchangeRateOracle(_exchangeRateOracle);
+    }
+
+    ExchangeRateOracle oracle;
+
+    constructor (address _TRU, address _exchangeRateOracle) 
+        DepositsManager(_TRU) 
+        JackpotManager(_TRU) 
+        RewardsManager(_TRU)  
+        public 
+    {
         oracle = ExchangeRateOracle(_exchangeRateOracle);
     }
 
@@ -198,14 +211,16 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 	t.storageType = storageType;
 	t.storageAddress = storageAddress;
 	defaultParameters(numTasks);
-        
+	
         // LOOK AT: May be some problem if tax amount is also not bonded
         // but still submitted through makeDeposit. For example,
         // if the task giver decides to bond the deposit and the
+
         // tax can not be collected. Perhaps another bonding
         // structure to escrow the taxes.
         log0(keccak256(abi.encodePacked(msg.sender))); // possible bug if log is after event
         emit TaskCreated(numTasks, minDeposit, t.taskCreationBlockNumber, t.reward, t.tax, t.codeType, t.storageType, t.storageAddress);
+
         numTasks.add(1);
         return true;
     }
@@ -216,7 +231,10 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     // @return – boolean
     function changeTaskState(uint taskID, uint newState) public returns (bool) {
         Task storage t = tasks[taskID];
+	
+	//TODO: Add this back in
         //require(stateChangeTimeoutReached(taskID));
+
         t.state = State(newState);
         emit TaskStateChange(taskID, newState);
         return true;
@@ -247,6 +265,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         emit SolverSelected(taskID, msg.sender, t.initTaskHash, t.minDeposit, t.randomBitsHash);
         return true;
     }
+    
 
     // @dev – new solver registers for task if penalize old one, don't burn tokens twice
     // 0 -> 1
@@ -314,6 +333,31 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 
         return true;
     }
+
+    // @dev – selected solver revealed his random bits prematurely
+    // @param taskID – The task id.
+    // @param randomBits – bits whose hash is the commited randomBitsHash of this task
+    // @return – boolean
+    function prematureReveal(uint taskID, uint originalRandomBits) public returns (bool) {
+        Task storage t = tasks[taskID];
+        require(t.state == State.SolverSelected);
+        require(block.number < t.taskCreationBlockNumber.add(t.numBlocks));
+        require(t.randomBitsHash == keccak256(originalRandomBits));
+        uint bondedDeposit = t.bondedDeposits[t.selectedSolver];
+        delete t.bondedDeposits[t.selectedSolver];
+        deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit/2);
+        token.burn(bondedDeposit/2);
+        emit SolverDepositBurned(t.selectedSolver, taskID);
+        
+        // Reset task data to selected another solver
+        t.state = State.TaskInitialized;
+        t.selectedSolver = 0x0;
+        t.taskCreationBlockNumber = block.number;
+        emit TaskCreated(taskID, t.minDeposit, t.numBlocks, t.reward, 1);
+
+        return true;
+    }
+        
 
     function taskGiverTimeout(uint taskID) public {
         Task storage t = tasks[taskID];
@@ -423,6 +467,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     function finalizeTask(uint taskID) public {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
+
         require(s.currentChallenger >= s.solution0Challengers.length
 		|| s.currentChallenger >= s.solution1Challengers.length
 		&& IDisputeResolutionLayer(disputeResolutionLayer).status(s.currentGame) == uint(Status.SolverWon));
