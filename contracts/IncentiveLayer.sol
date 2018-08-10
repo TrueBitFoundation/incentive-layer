@@ -103,17 +103,6 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         oracle = ExchangeRateOracle(_exchangeRateOracle);
     }
 
-    ExchangeRateOracle oracle;
-
-    constructor (address _TRU, address _exchangeRateOracle) 
-        DepositsManager(_TRU) 
-        JackpotManager(_TRU) 
-        RewardsManager(_TRU)  
-        public 
-    {
-        oracle = ExchangeRateOracle(_exchangeRateOracle);
-    }
-
     // @dev - private method to check if the denoted amount of blocks have been mined (time has passed).
     // @param taskID - the task id.
     // @param numBlocks - the difficulty weight for the task
@@ -332,32 +321,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         emit TaskCreated(taskID, t.minDeposit, t.taskCreationBlockNumber, t.reward, 1, t.codeType, t.storageType, t.storageAddress);
 
         return true;
-    }
-
-    // @dev – selected solver revealed his random bits prematurely
-    // @param taskID – The task id.
-    // @param randomBits – bits whose hash is the commited randomBitsHash of this task
-    // @return – boolean
-    function prematureReveal(uint taskID, uint originalRandomBits) public returns (bool) {
-        Task storage t = tasks[taskID];
-        require(t.state == State.SolverSelected);
-        require(block.number < t.taskCreationBlockNumber.add(t.numBlocks));
-        require(t.randomBitsHash == keccak256(originalRandomBits));
-        uint bondedDeposit = t.bondedDeposits[t.selectedSolver];
-        delete t.bondedDeposits[t.selectedSolver];
-        deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit/2);
-        token.burn(bondedDeposit/2);
-        emit SolverDepositBurned(t.selectedSolver, taskID);
-        
-        // Reset task data to selected another solver
-        t.state = State.TaskInitialized;
-        t.selectedSolver = 0x0;
-        t.taskCreationBlockNumber = block.number;
-        emit TaskCreated(taskID, t.minDeposit, t.numBlocks, t.reward, 1);
-
-        return true;
-    }
-        
+    }        
 
     function taskGiverTimeout(uint taskID) public {
         Task storage t = tasks[taskID];
