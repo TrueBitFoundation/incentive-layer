@@ -61,7 +61,6 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         bytes32 initTaskHash;
         mapping(address => bytes32) challenges;
         State state;
-        bytes32 blockhash;
         bytes32 randomBitsHash;
         uint taskCreationBlockNumber;
         mapping(address => uint) bondedDeposits;
@@ -244,7 +243,6 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         bondDeposit(taskID, msg.sender, t.minDeposit);
         t.selectedSolver = msg.sender;
         t.randomBitsHash = randomBitsHash;
-        t.blockhash = blockhash(block.number.add(1));
         t.state = State.SolverSelected;
 
         // Burn task giver's taxes now that someone has claimed the task
@@ -271,7 +269,6 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         bondDeposit(taskID, msg.sender, t.minDeposit);
         t.selectedSolver = msg.sender;
         t.randomBitsHash = randomBitsHash;
-        t.blockhash = blockhash(block.number.add(1));
         t.state = State.SolverSelected;
 
         emit SolverSelected(taskID, msg.sender, t.initTaskHash, t.minDeposit, t.randomBitsHash);
@@ -396,7 +393,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     }
 
     function isForcedError(uint randomBits) internal view returns (bool) {
-        return (uint(keccak256(abi.encodePacked(randomBits, blockhash(block.number)))) < forcedErrorThreshold);
+        return (uint(keccak256(abi.encodePacked(randomBits, blockhash(block.number-1)))) < forcedErrorThreshold);
     }
 
     function rewardJackpot(uint taskID) internal {
